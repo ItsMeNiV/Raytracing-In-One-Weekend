@@ -2,6 +2,7 @@
 #include "RTWeekend.h"
 #include "Hittable.h"
 #include "Camera.h"
+#include "Material.h"
 
 glm::vec3 rayColor(const Ray& r, const Hittable& world, int depth)
 {
@@ -12,12 +13,11 @@ glm::vec3 rayColor(const Ray& r, const Hittable& world, int depth)
 
 	if (world.Hit(r, 0.001f, infinity, rec))
 	{
-		#ifdef HEMISPHERE_DIFFUSE
-		glm::vec3 target = rec.p + randomInHemisphere(rec.normal);
-		#else
-		glm::vec3 target = rec.p + rec.normal + randomUnitVector();
-		#endif
-		return 0.5f * rayColor(Ray(rec.p, target - rec.p), world, depth-1);
+		Ray scattered;
+		glm::vec3 attenuation;
+		if (rec.matPtr->scatter(r, rec, attenuation, scattered))
+			return attenuation * rayColor(scattered, world, depth - 1);
+		return glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 	glm::vec3 unitDirection = glm::normalize(r.direction);
 	float t = 0.5f * (unitDirection.y + 1.0f);
@@ -48,11 +48,18 @@ int main()
 	const int samplesPerPixel = 100;
 	const int maxDepth = 50;
 
+	//Materials
+	auto material_ground = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
+	auto material_center = std::make_shared<Lambertian>(glm::vec3(0.7f, 0.3f, 0.3f));
+	auto material_left = std::make_shared<Metal>(glm::vec3(0.8f, 0.8f, 0.8f), 0.3f);
+	auto material_right = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 1.0f);
+
 	//World
 	HittableList world;
-	world.add(make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
-	world.add(make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.2f));
-	world.add(make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, material_ground));
+	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, material_center));
+	world.add(std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, material_left));
+	world.add(std::make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, material_right));
 
 	//Camera
 	Camera cam;

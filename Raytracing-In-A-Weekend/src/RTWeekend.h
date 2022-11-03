@@ -79,10 +79,15 @@ glm::vec3 randomVecInUnitSphere()
 	}
 }
 
+glm::vec3 unitVector(const glm::vec3 vec)
+{
+	return vec / vecLength(vec);
+}
+
 glm::vec3 randomUnitVector()
 {
 	glm::vec3 vec = randomVecInUnitSphere();
-	return vec / vecLength(vec);
+	return unitVector(vec);
 }
 
 glm::vec3 randomInHemisphere(const glm::vec3& normal)
@@ -92,4 +97,10 @@ glm::vec3 randomInHemisphere(const glm::vec3& normal)
 		return inUnitSphere;
 	else
 		return -inUnitSphere;
+}
+
+bool vecNearZero(const glm::vec3& vec)
+{
+	const auto s = 1e-8;
+	return (fabs(vec.x) < s) && (fabs(vec.y) < s) && (fabs(vec.z) < s);
 }

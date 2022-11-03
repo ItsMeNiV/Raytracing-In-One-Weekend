@@ -4,11 +4,15 @@
 
 #include "glm/glm.hpp"
 #include "Ray.h"
+#include "RTWeekend.h"
+
+class Material;
 
 struct HitRecord
 {
     glm::vec3 p;
     glm::vec3 normal;
+    std::shared_ptr<Material> matPtr;
 	float t;
     bool frontFace;
 
@@ -28,7 +32,7 @@ public:
 class Sphere : public Hittable {
 public:
     Sphere() {}
-    Sphere(glm::vec3 cen, double r) : center(cen), radius(r) {};
+    Sphere(glm::vec3 cen, double r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};
 
     virtual bool Hit(
         const Ray& r, float tMin, float tMax, HitRecord& rec) const override
@@ -54,6 +58,7 @@ public:
         rec.p = r.At(rec.t);
         glm::vec3 outwardNormal = (rec.p - center) / radius;
         rec.setFaceNormal(r, outwardNormal);
+        rec.matPtr = matPtr;
 
         return true;
     }
@@ -61,6 +66,7 @@ public:
 public:
     glm::vec3 center;
     float radius;
+    std::shared_ptr<Material> matPtr;
 };
 
 class HittableList : public Hittable
