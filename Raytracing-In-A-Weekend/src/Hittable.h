@@ -14,7 +14,7 @@ struct HitRecord
 
     inline void setFaceNormal(const Ray& r, const glm::vec3& outwardNormal)
     {
-        frontFace = glm::dot(r.direction, outwardNormal) < 0;
+        frontFace = vecDot(r.direction, outwardNormal) < 0;
         normal = frontFace ? outwardNormal : -outwardNormal;
     }
 };
@@ -34,9 +34,9 @@ public:
         const Ray& r, float tMin, float tMax, HitRecord& rec) const override
     {
         glm::vec3 oc = r.origin - center;
-        float a = glm::dot(r.direction, r.direction);
-        float halfB = glm::dot(oc, r.direction);
-        float c = glm::dot(oc, oc) - radius * radius;
+        float a = vecLengthSquared(r.direction);
+        float halfB = vecDot(oc, r.direction);
+        float c = vecLengthSquared(oc) - radius * radius;
 
         float discriminant = halfB * halfB - a * c;
         if (discriminant < 0) return false;

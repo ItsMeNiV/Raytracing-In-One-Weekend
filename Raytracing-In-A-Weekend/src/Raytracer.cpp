@@ -3,12 +3,21 @@
 #include "Hittable.h"
 #include "Camera.h"
 
-glm::vec3 rayColor(const Ray& r, const Hittable& world)
+glm::vec3 rayColor(const Ray& r, const Hittable& world, int depth)
 {
 	HitRecord rec;
-	if (world.Hit(r, 0, infinity, rec))
+
+	if (depth <= 0)
+		return glm::vec3(0.0f, 0.0f, 0.0f);
+
+	if (world.Hit(r, 0.001f, infinity, rec))
 	{
-		return 0.5f * (rec.normal + glm::vec3(1.0f, 1.0f, 1.0f));
+		#ifdef HEMISPHERE_DIFFUSE
+		glm::vec3 target = rec.p + randomInHemisphere(rec.normal);
+		#else
+		glm::vec3 target = rec.p + rec.normal + randomUnitVector();
+		#endif
+		return 0.5f * rayColor(Ray(rec.p, target - rec.p), world, depth-1);
 	}
 	glm::vec3 unitDirection = glm::normalize(r.direction);
 	float t = 0.5f * (unitDirection.y + 1.0f);
@@ -21,9 +30,9 @@ void writeColor(std::ostream& out, glm::vec3 pixelColor, int samplesPerPixel) {
 	auto b = pixelColor.z;
 
 	auto scale = 1.0 / samplesPerPixel;
-	r *= scale;
-	g *= scale;
-	b *= scale;
+	r = sqrt(scale * r);
+	g = sqrt(scale * g);
+	b = sqrt(scale * b);
 
 	out << static_cast<int>(255.999 * clamp(r, 0.0, 0.999)) << ' '
 		<< static_cast<int>(255.999 * clamp(g, 0.0, 0.999)) << ' '
@@ -37,10 +46,12 @@ int main()
 	const int imageWidth = 400;
 	const int imageHeight = static_cast<int>(imageWidth / aspectRatio);
 	const int samplesPerPixel = 100;
+	const int maxDepth = 50;
 
 	//World
 	HittableList world;
 	world.add(make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
+	world.add(make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.2f));
 	world.add(make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
 
 	//Camera
@@ -60,7 +71,7 @@ int main()
 				float u = (i + randomFloat()) / (imageWidth - 1);
 				float v = (j + randomFloat()) / (imageHeight - 1);
 				Ray r = cam.GetRay(u, v);
-				pixelColor += rayColor(r, world);
+				pixelColor += rayColor(r, world, maxDepth);
 			}
 			writeColor(std::cout, pixelColor, samplesPerPixel);
 		}
