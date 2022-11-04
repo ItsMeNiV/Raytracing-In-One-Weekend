@@ -50,21 +50,22 @@ int main()
 	const int maxDepth = 50;
 
 	//Materials
-	auto material_ground = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
-	auto material_center = std::make_shared<Lambertian>(glm::vec3(0.1f, 0.2f, 0.5f));
-	auto material_left = std::make_shared<Dielectric>(1.5f);
-	auto material_right = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f);
+	auto materialGround = make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
+	auto materialCenter = make_shared<Lambertian>(glm::vec3(0.1f, 0.2f, 0.5f));
+	auto materialLeft = make_shared<Dielectric>(1.5f);
+	auto materialRight = make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f);
 
 	//World
+	auto R = cos(pi / 4);
 	HittableList world;
-	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, material_ground));
-	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, material_center));
-	world.add(std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, material_left));
-	world.add(std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), -0.4f, material_left));
-	world.add(std::make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, material_right));
+	world.add(make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, materialGround));
+	world.add(make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, materialCenter));
+	world.add(make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, materialLeft));
+	world.add(make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), -0.45f, materialLeft));
+	world.add(make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, materialRight));
 
 	//Camera
-	Camera cam;
+	Camera cam({ -2.0f, 2.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f }, 90.0f, aspectRatio);
 
 	//Render
 	std::ofstream fout("image.ppm");

@@ -4,22 +4,27 @@
 class Camera
 {
 public:
-	Camera()
+	Camera(glm::vec3 lookfrom, glm::vec3 lookat, glm::vec3 vup, float vfov, float aspectRatio)
 	{
-		auto aspectRatio = 16.0f / 9.0f;
-		auto viewportHeight = 2.0f;
+		auto theta = glm::radians(vfov);
+		auto h = tan(theta / 2.0f);
+		auto viewportHeight = 2.0f * h;
 		auto viewportWidth = aspectRatio * viewportHeight;
 		auto focalLength = 1.0f;
 
-		origin = glm::vec3(0.0f, 0.0f, 0.0f);
-		horizontal = glm::vec3(viewportWidth, 0.0f, 0.0f);
-		vertical = glm::vec3(0.0, viewportHeight, 0.0f);
-		lowerLeftCorner = origin - horizontal / 2.0f - vertical / 2.0f - glm::vec3(0.0f, 0.0f, focalLength);
+		auto w = unitVector(lookfrom - lookat);
+		auto u = unitVector(glm::cross(vup, w));
+		auto v = glm::cross(w, u);
+
+		origin = lookfrom;
+		horizontal = viewportWidth * u;
+		vertical = viewportHeight * v;
+		lowerLeftCorner = origin - horizontal / 2.0f - vertical / 2.0f - w;
 	}
 
-	Ray GetRay(float u, float v) const
+	Ray GetRay(float s, float t) const
 	{
-		return Ray(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
+		return Ray(origin, lowerLeftCorner + s * horizontal + t * vertical - origin);
 	}
 
 private:
