@@ -99,6 +99,16 @@ glm::vec3 randomInHemisphere(const glm::vec3& normal)
 		return -inUnitSphere;
 }
 
+glm::vec3 randomInUnitDisk()
+{
+	while (true)
+	{
+		glm::vec3 p = glm::vec3(randomFloat(-1.0f, 1.0f), randomFloat(-1.0f, 1.0f), 0.0f);
+		if (vecLengthSquared(p) >= 1) continue;
+		return p;
+	}
+}
+
 bool vecNearZero(const glm::vec3& vec)
 {
 	const auto s = 1e-8;

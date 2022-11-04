@@ -65,7 +65,12 @@ int main()
 	world.add(make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, materialRight));
 
 	//Camera
-	Camera cam({ -2.0f, 2.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f }, 90.0f, aspectRatio);
+	glm::vec3 lookfrom = { 3.0f, 3.0f, 2.0f };
+	glm::vec3 lookat = { 0.0f, 0.0f, -1.0f };
+	glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
+	float distToFocus = glm::length(lookfrom - lookat);
+	float aperture = 2.0f;
+	Camera cam(lookfrom, lookat, vup, 20.0f, aspectRatio, aperture, distToFocus);
 
 	//Render
 	std::ofstream fout("image.ppm");
