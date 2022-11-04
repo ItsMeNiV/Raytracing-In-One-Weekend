@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <fstream>
 #include "RTWeekend.h"
 #include "Hittable.h"
 #include "Camera.h"
@@ -50,21 +51,24 @@ int main()
 
 	//Materials
 	auto material_ground = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
-	auto material_center = std::make_shared<Lambertian>(glm::vec3(0.7f, 0.3f, 0.3f));
-	auto material_left = std::make_shared<Metal>(glm::vec3(0.8f, 0.8f, 0.8f), 0.3f);
-	auto material_right = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 1.0f);
+	auto material_center = std::make_shared<Lambertian>(glm::vec3(0.1f, 0.2f, 0.5f));
+	auto material_left = std::make_shared<Dielectric>(1.5f);
+	auto material_right = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f);
 
 	//World
 	HittableList world;
 	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, material_ground));
 	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, material_center));
 	world.add(std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, material_left));
+	world.add(std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), -0.4f, material_left));
 	world.add(std::make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, material_right));
 
 	//Camera
 	Camera cam;
 
 	//Render
+	std::ofstream fout("image.ppm");
+	std::cout.rdbuf(fout.rdbuf());
 	std::cout << "P3\n" << imageWidth << ' ' << imageHeight << "\n255\n";
 
 	for (int j = imageHeight -1; j >= 0; --j)

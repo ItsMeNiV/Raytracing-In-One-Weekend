@@ -104,3 +104,11 @@ bool vecNearZero(const glm::vec3& vec)
 	const auto s = 1e-8;
 	return (fabs(vec.x) < s) && (fabs(vec.y) < s) && (fabs(vec.z) < s);
 }
+
+glm::vec3 refract(const glm::vec3& uv, const glm::vec3& n, float etaiOverEtat)
+{
+	float cosTheta = fmin(vecDot(-uv, n), 1.0);
+	glm::vec3 rOutPerp = etaiOverEtat * (uv + cosTheta * n);
+	glm::vec3 rOutParallel = -sqrt(fabs(1.0f - vecLengthSquared(rOutPerp))) * n;
+	return rOutPerp + rOutParallel;
+}
