@@ -1,4 +1,6 @@
-#pragma once
+#ifndef RTWEEKEND_H
+#define RTWEEKEND_H
+
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -6,9 +8,6 @@
 #include <random>
 
 // Usings
-
-using std::shared_ptr;
-using std::make_shared;
 using std::sqrt;
 
 // Constants
@@ -122,3 +121,5 @@ glm::vec3 refract(const glm::vec3& uv, const glm::vec3& n, float etaiOverEtat)
 	glm::vec3 rOutParallel = -sqrt(fabs(1.0f - vecLengthSquared(rOutPerp))) * n;
 	return rOutPerp + rOutParallel;
 }
+
+#endif

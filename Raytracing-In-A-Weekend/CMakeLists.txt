@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Fügen Sie der ausführbaren Datei dieses Projekts eine Quelle hinzu.
-add_executable (Raytracing-In-A-Weekend "src/Raytracer.cpp"   "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/Camera.h" "src/Material.h")
+add_executable (Raytracing-In-A-Weekend "src/Raytracer.cpp"   "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/Camera.h" "src/Material.h"  "src/Raytracer.h" )
 
 target_include_directories(Raytracing-In-A-Weekend PRIVATE "vendor/glm")
 

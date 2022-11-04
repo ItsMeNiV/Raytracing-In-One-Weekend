@@ -1,5 +1,5 @@
 #pragma once
-#include "RTWeekend.h"
+#include "glm/glm.hpp"
 
 class Camera
 {
