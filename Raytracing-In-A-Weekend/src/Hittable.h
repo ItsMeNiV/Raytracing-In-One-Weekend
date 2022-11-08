@@ -2,7 +2,6 @@
 #include <memory>
 #include <vector>
 
-#include "glm/glm.hpp"
 #include "Ray.h"
 #include "RTWeekend.h"
 
@@ -10,15 +9,15 @@ class Material;
 
 struct HitRecord
 {
-    glm::vec3 p;
-    glm::vec3 normal;
+    Vec3 p;
+    Vec3 normal;
     std::shared_ptr<Material> matPtr;
-	float t;
+	double t;
     bool frontFace;
 
-    inline void setFaceNormal(const Ray& r, const glm::vec3& outwardNormal)
+    inline void setFaceNormal(const Ray& r, const Vec3& outwardNormal)
     {
-        frontFace = vecDot(r.direction, outwardNormal) < 0;
+        frontFace = dot(r.direction, outwardNormal) < 0;
         normal = frontFace ? outwardNormal : -outwardNormal;
     }
 };
@@ -26,28 +25,28 @@ struct HitRecord
 class Hittable
 {
 public:
-	virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const = 0;
+	virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const = 0;
 };
 
 class Sphere : public Hittable {
 public:
     Sphere() {}
-    Sphere(glm::vec3 cen, double r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};
+    Sphere(Vec3 cen, double r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};
 
     virtual bool Hit(
-        const Ray& r, float tMin, float tMax, HitRecord& rec) const override
+        const Ray& r, double tMin, double tMax, HitRecord& rec) const override
     {
-        glm::vec3 oc = r.origin - center;
-        float a = vecLengthSquared(r.direction);
-        float halfB = vecDot(oc, r.direction);
-        float c = vecLengthSquared(oc) - radius * radius;
+        Vec3 oc = r.origin - center;
+        double a = r.direction.length_squared();
+        double halfB = dot(oc, r.direction);
+        double c = oc.length_squared() - radius * radius;
 
-        float discriminant = halfB * halfB - a * c;
+        double discriminant = halfB * halfB - a * c;
         if (discriminant < 0) return false;
-        float sqrtd = sqrt(discriminant);
+        double sqrtd = sqrt(discriminant);
 
         // Find the nearest root that lies in the acceptable range.
-        float root = (-halfB - sqrtd) / a;
+        double root = (-halfB - sqrtd) / a;
         if (root < tMin || tMax < root) {
             root = (-halfB + sqrtd) / a;
             if (root < tMin || tMax < root)
@@ -56,7 +55,7 @@ public:
 
         rec.t = root;
         rec.p = r.At(rec.t);
-        glm::vec3 outwardNormal = (rec.p - center) / radius;
+        Vec3 outwardNormal = (rec.p - center) / radius;
         rec.setFaceNormal(r, outwardNormal);
         rec.matPtr = matPtr;
 
@@ -64,8 +63,8 @@ public:
     }
 
 public:
-    glm::vec3 center;
-    float radius;
+    Vec3 center;
+    double radius;
     std::shared_ptr<Material> matPtr;
 };
 
@@ -78,7 +77,7 @@ public:
     void clear() { objects.clear(); }
     void add(std::shared_ptr<Hittable> object) { objects.push_back(object); }
 
-    virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override
+    virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const override
     {
         HitRecord tempRec;
         bool hitAnything = false;

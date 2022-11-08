@@ -1,6 +1,9 @@
 #pragma once
 #include <iostream>
 #include <fstream>
+#include <map>
+#include <mutex>
+#include <string>
 #include "Hittable.h"
 #include "Camera.h"
 #include "Material.h"
@@ -22,27 +25,27 @@ protected:
 	HittableList& mWorld;
 	int mImageHeight, mImageWidth, mSamplesPerPixel, mMaxDepth;
 
-	glm::vec3 rayColor(const Ray& r, int depth)
+	Vec3 rayColor(const Ray& r, int depth)
 	{
 		HitRecord rec;
 
 		if (depth <= 0)
-			return glm::vec3(0.0f, 0.0f, 0.0f);
+			return Vec3(0.0, 0.0, 0.0);
 
-		if (mWorld.Hit(r, 0.001f, infinity, rec))
+		if (mWorld.Hit(r, 0.001, infinity, rec))
 		{
 			Ray scattered;
-			glm::vec3 attenuation;
+			Vec3 attenuation;
 			if (rec.matPtr->scatter(r, rec, attenuation, scattered))
 				return attenuation * rayColor(scattered, depth - 1);
-			return glm::vec3(0.0f, 0.0f, 0.0f);
+			return Vec3(0.0, 0.0, 0.0);
 		}
-		glm::vec3 unitDirection = glm::normalize(r.direction);
-		float t = 0.5f * (unitDirection.y + 1.0f);
-		return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
+		Vec3 unitDirection = unitVector(r.direction);
+		double t = 0.5 * (unitDirection.y + 1.0);
+		return (1.0 - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
 	}
 
-	void writeColor(glm::vec3 pixelColor, int samplesPerPixel)
+	void writeColor(Vec3 pixelColor, int samplesPerPixel)
 	{
 		auto r = pixelColor.x;
 		auto g = pixelColor.y;
@@ -56,6 +59,22 @@ protected:
 		std::cout << static_cast<int>(255.999 * clamp(r, 0.0, 0.999)) << ' '
 			<< static_cast<int>(255.999 * clamp(g, 0.0, 0.999)) << ' '
 			<< static_cast<int>(255.999 * clamp(b, 0.0, 0.999)) << '\n';
+	}
+
+	void writeColor(Vec3 pixelColor, int samplesPerPixel, std::string& outputString)
+	{
+		auto r = pixelColor.x;
+		auto g = pixelColor.y;
+		auto b = pixelColor.z;
+
+		auto scale = 1.0 / samplesPerPixel;
+		r = sqrt(scale * r);
+		g = sqrt(scale * g);
+		b = sqrt(scale * b);
+
+		outputString += std::to_string(static_cast<int>(255.999 * clamp(r, 0.0, 0.999))) + ' '
+			+ std::to_string(static_cast<int>(255.999 * clamp(g, 0.0, 0.999))) + ' '
+			+ std::to_string(static_cast<int>(255.999 * clamp(b, 0.0, 0.999))) + '\n';
 	}
 
 };
@@ -76,4 +95,10 @@ public:
 		: Raytracer(fout, camera, world, imageHeight, imageWidth, samplesPerPixel, maxDepth) {}
 
 	virtual void run() override;
+
+private:
+	std::map<int, std::string> mOutputStringMap;
+	std::mutex mOutputStringMapMutex;
+
+	void writeLines(std::vector<int> lineNumbers);
 };
