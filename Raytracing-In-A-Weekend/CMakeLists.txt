@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Fügen Sie der ausführbaren Datei dieses Projekts eine Quelle hinzu.
-add_executable (${CMAKE_PROJECT_NAME} "vendor/glad/src/glad.c" "src/Raytracer.cpp" "src/Vec3.h" "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/Camera.h" "src/Material.h"  "src/Raytracer.h"  )
+add_executable (${CMAKE_PROJECT_NAME} "vendor/glad/src/glad.c" "src/Raytracer.cpp" "src/Vec3.h" "src/Vec3.cpp" "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/RTWeekend.cpp" "src/Camera.h" "src/Material.h"  "src/Raytracer.h"   "src/RaytracingApplication.cpp")
 
 add_subdirectory("vendor/glfw")
 

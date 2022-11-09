@@ -1,6 +1,40 @@
 ﻿#include "Raytracer.h"
-#include <thread>
-#include <string>
+
+Vec3 Raytracer::rayColor(const Ray& r, int depth)
+{
+	HitRecord rec;
+
+	if (depth <= 0)
+		return Vec3(0.0, 0.0, 0.0);
+
+	if (mWorld.Hit(r, 0.001, infinity, rec))
+	{
+		Ray scattered;
+		Vec3 attenuation;
+		if (rec.matPtr->scatter(r, rec, attenuation, scattered))
+			return attenuation * rayColor(scattered, depth - 1);
+		return Vec3(0.0, 0.0, 0.0);
+	}
+	Vec3 unitDirection = unitVector(r.direction);
+	double t = 0.5 * (unitDirection.y + 1.0);
+	return (1.0 - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+}
+
+void Raytracer::writeColor(Vec3 pixelColor, int samplesPerPixel)
+{
+	auto r = pixelColor.x;
+	auto g = pixelColor.y;
+	auto b = pixelColor.z;
+
+	auto scale = 1.0 / samplesPerPixel;
+	r = sqrt(scale * r);
+	g = sqrt(scale * g);
+	b = sqrt(scale * b);
+
+	std::cout << static_cast<int>(255.999 * clamp(r, 0.0, 0.999)) << ' '
+		<< static_cast<int>(255.999 * clamp(g, 0.0, 0.999)) << ' '
+		<< static_cast<int>(255.999 * clamp(b, 0.0, 0.999)) << '\n';
+}
 
 void RaytracerNormal::run()
 {
@@ -41,10 +75,24 @@ void RaytracerMT::writeLines(std::vector<int> lineNumbers)
 				Ray r = mCamera.GetRay(u, v);
 				pixelColor += rayColor(r, mMaxDepth);
 			}
-			writeColor(pixelColor, mSamplesPerPixel, lineString);
+			auto r = pixelColor.x;
+			auto g = pixelColor.y;
+			auto b = pixelColor.z;
+
+			auto scale = 1.0 / mSamplesPerPixel;
+			r = sqrt(scale * r);
+			g = sqrt(scale * g);
+			b = sqrt(scale * b);
+
+			uint8_t rValue = static_cast<int>(255.999 * clamp(r, 0.0, 0.999));
+			uint8_t gValue = static_cast<int>(255.999 * clamp(g, 0.0, 0.999));
+			uint8_t bValue = static_cast<int>(255.999 * clamp(b, 0.0, 0.999));
+
+			const std::lock_guard<std::mutex> lock(mOutputMutex);
+			(*mImageTextureData)[j][i][0] = rValue;
+			(*mImageTextureData)[j][i][1] = gValue;
+			(*mImageTextureData)[j][i][2] = bValue;
 		}
-		const std::lock_guard<std::mutex> lock(mOutputStringMapMutex);
-		mOutputStringMap[j] = lineString;
 		std::cerr << "Line " << std::to_string(j) << " Done.\n";
 	}
 }
@@ -52,7 +100,7 @@ void RaytracerMT::writeLines(std::vector<int> lineNumbers)
 void RaytracerMT::run()
 {
 	std::cout << "P3\n" << mImageWidth << ' ' << mImageHeight << "\n255\n";
-	const int threadCount = 10;
+	const int threadCount = 5;
 
 	std::vector<std::thread> threads;
 	int linesPerThread = mImageHeight / threadCount;
@@ -69,14 +117,7 @@ void RaytracerMT::run()
 	}
 
 	for (std::thread& t : threads) {
-		if (t.joinable()) {
-			t.join();
-		}
-	}
-
-	for(std::map<int, std::string>::reverse_iterator i = mOutputStringMap.rbegin(); i != mOutputStringMap.rend(); ++i)
-	{
-		std::cout << i->second;
+		t.join();
 	}
 
 	std::cerr << "\nDone.\n";
@@ -128,31 +169,4 @@ HittableList randomScene() {
 	world.add(std::make_shared<Sphere>(Vec3(4.0, 1.0, 0.0), 1.0, material3));
 
 	return world;
-}
-
-int main()
-{
-	//Image
-	const double aspectRatio = 3.0 / 2.0;
-	const int imageWidth = 1200;
-	const int imageHeight = static_cast<int>(imageWidth / aspectRatio);
-	const int samplesPerPixel = 200;
-	const int maxDepth = 50;
-
-	//World
-	HittableList world = randomScene();
-
-	//Camera
-	Vec3 lookfrom = { 13.0, 2.0, 3.0 };
-	Vec3 lookat = { 0.0, 0.0, 0.0 };
-	Vec3 vup = { 0.0, 1.0, 0.0 };
-	double distToFocus = 10.0;
-	double aperture = 0.1;
-	Camera cam(lookfrom, lookat, vup, 20.0, aspectRatio, aperture, distToFocus);
-
-	//Render
-	std::ofstream fout("image.ppm");
-	//RaytracerNormal tracer(fout, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
-	RaytracerMT tracer(fout, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
-	tracer.run();
 }

@@ -2,7 +2,6 @@
 #include <memory>
 #include <vector>
 
-#include "Ray.h"
 #include "RTWeekend.h"
 
 class Material;
