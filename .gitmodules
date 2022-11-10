@@ -4,3 +4,6 @@
 [submodule "Raytracing-In-A-Weekend/vendor/glfw"]
 	path = Raytracing-In-A-Weekend/vendor/glfw
 	url = https://github.com/glfw/glfw
+[submodule "Raytracing-In-A-Weekend/vendor/imgui"]
+	path = Raytracing-In-A-Weekend/vendor/imgui
+	url = https://github.com/ocornut/imgui.git

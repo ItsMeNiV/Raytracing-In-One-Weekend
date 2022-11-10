@@ -1,7 +1,13 @@
 #include "RaytracingApplication.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+static int imageWidth = 1600;
+static int imageHeight = 900;
 
 RaytracingApplication::RaytracingApplication()
-	: running(false), imageTexture(0), imageWidth(1600), imageHeight(900),
+	: running(false), imageTexture(0),
 	window(glfwCreateWindow(1600, 900, "Raytracing in a Weekend impl. by Yannik Hodel", NULL, NULL)),
 	imageTextureData(std::make_shared<std::vector<GLubyte>>())
 {
@@ -16,13 +22,28 @@ RaytracingApplication::RaytracingApplication()
 	glfwSetWindowUserPointer(window, this);
 
 	glViewport(0, 0, imageWidth, imageHeight);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 460");
 }
 
 RaytracingApplication::~RaytracingApplication()
 {
-	raytracerPtr->Cancel();
-	raytracerThread->join();
+	if(raytracerPtr)
+		raytracerPtr->Cancel();
+	if(raytracerThread && raytracerThread->joinable())
+		raytracerThread->join();
 	raytracerPtr.release();
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
 	glfwTerminate();
 }
 
@@ -105,8 +126,42 @@ void RaytracingApplication::Run()
 
 	while (!glfwWindowShouldClose(window))
 	{
+		glfwPollEvents();
+
 		if (raytracerThread && !running && raytracerThread->joinable())
 			raytracerThread->join();
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+		ImGui::Begin("Render settings", NULL, windowFlags);
+		ImGui::SetWindowSize({ 300.0f, 100.0f });
+		ImGui::SetWindowPos({ 0.0f, 0.0f });
+		
+		ImGui::InputInt("Image width", &imageWidth);
+		ImGui::InputInt("Image height", &imageHeight);
+		if (ImGui::Button("Render"))
+		{
+			if (!running)
+			{
+				running = true;
+				runRaytracer();
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			if (running && raytracerPtr)
+			{
+				raytracerPtr->Cancel();
+				running = false;
+			}
+			if (raytracerThread && raytracerThread->joinable())
+				raytracerThread->join();
+		}
+		ImGui::End();
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -119,8 +174,10 @@ void RaytracingApplication::Run()
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		glfwSwapBuffers(window);
-		glfwPollEvents();
 	}
 }
 
