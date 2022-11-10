@@ -1,11 +1,11 @@
 #include "RaytracingApplication.h"
-#include <array>
 #include "Raytracer.h"
 
 RaytracingApplication::RaytracingApplication()
-	: window(glfwCreateWindow(800, 600, "Raytracing in a Weekend impl. by Yannik Hodel", NULL, NULL)), running(false),
-	imageTextureData(std::make_shared<std::array<std::array<std::array<GLubyte, 3>, 800>, 600>>())
+	: window(glfwCreateWindow(800, 600, "Raytracing in a Weekend impl. by Yannik Hodel", NULL, NULL)), running(false), imageTexture(0), imageWidth(800), imageHeight(600),
+	imageTextureData(std::make_shared<std::vector<GLubyte>>())
 {
+	imageTextureData->resize(imageWidth * imageHeight * 4);
 	glfwMakeContextCurrent(window);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -27,12 +27,11 @@ void RaytracingApplication::Run()
 {
 	const char* vertexShaderSource = "#version 460 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
-		"layout (location = 1) in vec2 aTexCoord;\n"
 		"out vec2 TexCoord;\n"
 		"void main()\n"
 		"{\n"
-		"   TexCoord = aTexCoord;\n"
-		"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"   gl_Position = vec4(aPos, 1.0);\n"
+		"   TexCoord = 0.5 * gl_Position.xy + vec2(0.5);\n"
 		"}\0";
 	const char* fragmentShaderSource = "#version 460 core\n"
 		"out vec4 FragColor;\n"
@@ -75,10 +74,10 @@ void RaytracingApplication::Run()
 	glUseProgram(shaderProgram);
 
 	float fullscreenQuadVerts[] = {
-		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-		-1.0f,  1.0f, 0.0f, 0.0f, 1.0f
+		-1.0f, -1.0f, 1.0f,
+		 1.0f, -1.0f, 1.0f,
+		 1.0f,  1.0f, 1.0f,
+		-1.0f,  1.0f, 1.0f
 	};
 
 	uint32_t fullscreenQuadIndices[] = {
@@ -95,10 +94,8 @@ void RaytracingApplication::Run()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(fullscreenQuadVerts), fullscreenQuadVerts, GL_STATIC_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(fullscreenQuadIndices), fullscreenQuadIndices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
 
 	glGenTextures(1, &imageTexture);
 	glBindTexture(GL_TEXTURE_2D, imageTexture);
@@ -111,7 +108,7 @@ void RaytracingApplication::Run()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, imageTextureData.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageTextureData->data());
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, imageTexture);
@@ -144,15 +141,14 @@ void RaytracingApplication::keyCallback(GLFWwindow* window, int key, int scancod
 
 void RaytracingApplication::runRaytracer()
 {
-	imageTextureData = std::make_shared<std::array<std::array<std::array<GLubyte, 3>, 800>, 600>>();
+	imageTextureData = std::make_shared<std::vector<GLubyte>>();
+	imageTextureData->resize(imageWidth * imageHeight * 4);
 	rayTracerThread = std::make_unique<std::thread>([this]
 	{
 			//Image
-			const double aspectRatio = 4.0 / 3.0;
-			const int imageWidth = 800;
-			const int imageHeight = static_cast<int>(imageWidth / aspectRatio);
-			const int samplesPerPixel = 2;
-			const int maxDepth = 5;
+			const double aspectRatio = imageWidth / imageHeight;
+			const int samplesPerPixel = 200;
+			const int maxDepth = 50;
 
 			//World
 			HittableList world = randomScene();
@@ -166,7 +162,7 @@ void RaytracingApplication::runRaytracer()
 			Camera cam(lookfrom, lookat, vup, 20.0, aspectRatio, aperture, distToFocus);
 
 			//Render
-			//RaytracerNormal tracer(fout, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+			//RaytracerNormal tracer(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
 			RaytracerMT tracer(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
 			tracer.run();
 			running = false;
