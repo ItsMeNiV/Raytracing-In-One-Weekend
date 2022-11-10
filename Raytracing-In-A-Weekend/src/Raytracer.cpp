@@ -42,7 +42,7 @@ void Raytracer::writeColor(Vec3 pixelColor, int samplesPerPixel, int lineNumber,
 	(*mImageTextureData)[index + 3] = (GLubyte)255;
 }
 
-void RaytracerNormal::run()
+void RaytracerNormal::Run()
 {
 	for (int j = mImageHeight - 1; j >= 0; --j)
 	{
@@ -64,32 +64,29 @@ void RaytracerNormal::run()
 	std::cerr << "\nDone.\n";
 }
 
-void RaytracerMT::writeLines(std::vector<int> lineNumbers)
+void RaytracerMT::writeLine(int lineNumber)
 {
-	for (int j : lineNumbers)
+	std::string lineString;
+	for (int i = 0; i < mImageWidth; ++i)
 	{
-		std::string lineString;
-		for (int i = 0; i < mImageWidth; ++i)
+		Vec3 pixelColor(0.0, 0.0, 0.0);
+		for (int s = 0; s < mSamplesPerPixel; ++s)
 		{
-			Vec3 pixelColor(0.0, 0.0, 0.0);
-			for (int s = 0; s < mSamplesPerPixel; ++s)
-			{
-				double u = (i + randomdouble()) / (mImageWidth - 1);
-				double v = (j + randomdouble()) / (mImageHeight - 1);
-				Ray r = mCamera.GetRay(u, v);
-				pixelColor += rayColor(r, mMaxDepth);
-			}
-			writeColor(pixelColor, mSamplesPerPixel, j, i);
+			double u = (i + randomdouble()) / (mImageWidth - 1);
+			double v = (lineNumber + randomdouble()) / (mImageHeight - 1);
+			Ray r = mCamera.GetRay(u, v);
+			pixelColor += rayColor(r, mMaxDepth);
 		}
-		std::cerr << "Line " << std::to_string(j) << " Done.\n";
+		const std::lock_guard<std::mutex> lock(mOutputMutex);
+		writeColor(pixelColor, mSamplesPerPixel, lineNumber, i);
 	}
+	std::cerr << "Line " << std::to_string(lineNumber) << " Done.\n";
 }
 
-void RaytracerMT::run()
+void RaytracerMT::Run()
 {
-	const int threadCount = 5;
+	const int threadCount = std::thread::hardware_concurrency() - 2;
 
-	std::vector<std::thread> threads;
 	int linesPerThread = mImageHeight / threadCount;
 	int currentLine = 0;
 	for (int i = 0; i < threadCount; i++)
@@ -100,7 +97,20 @@ void RaytracerMT::run()
 		{
 			linesForThread[i] = currentLine++;
 		}
-		threads.push_back(std::thread([this, linesForThread] { this->writeLines(linesForThread); }));
+		threads.push_back(std::thread([this, linesForThread]
+		{
+				while (!cancelThreads)
+				{
+					int lineNumber = 0;
+					{
+						const std::lock_guard<std::mutex> lock(mLineMutex);
+						lineNumber = mCurrentLineNumber++;
+					}
+					this->writeLine(lineNumber);
+
+					if (mCurrentLineNumber == mImageHeight) return;
+				}
+		}));
 	}
 
 	for (std::thread& t : threads) {

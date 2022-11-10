@@ -20,7 +20,7 @@ public:
 		: mImageTextureData(imageTextureData), mCamera(camera), mWorld(world), mImageHeight(imageHeight), mImageWidth(imageWidth), mSamplesPerPixel(samplesPerPixel), mMaxDepth(maxDepth)
 	{}
 	
-	virtual void run() = 0;
+	virtual void Run() = 0;
 
 protected:
 	std::shared_ptr<std::vector<GLubyte>> mImageTextureData;
@@ -40,21 +40,30 @@ public:
 	RaytracerNormal(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
 		: Raytracer(imageTextureData, camera, world, imageHeight, imageWidth, samplesPerPixel, maxDepth) {}
 
-	virtual void run() override;
+	virtual void Run() override;
 };
 
 class RaytracerMT : public Raytracer
 {
 public:
+	~RaytracerMT() = default;
 	RaytracerMT(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
-		: Raytracer(imageTextureData, camera, world, imageHeight, imageWidth, samplesPerPixel, maxDepth) {}
+		: Raytracer(imageTextureData, camera, world, imageHeight, imageWidth, samplesPerPixel, maxDepth), mCurrentLineNumber(0), cancelThreads(false) {}
 
-	virtual void run() override;
+	virtual void Run() override;
+
+	void Cancel() {
+		cancelThreads = true;
+	}
 
 private:
 	std::mutex mOutputMutex;
+	std::mutex mLineMutex;
+	int mCurrentLineNumber;
+	std::vector<std::thread> threads;
+	std::atomic_bool cancelThreads;
 
-	void writeLines(std::vector<int> lineNumbers);
+	void writeLine(int lineNumber);
 };
 
 HittableList randomScene();

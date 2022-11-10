@@ -4,6 +4,7 @@
 #include <vector>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "Raytracer.h"
 
 class RaytracingApplication
 {
@@ -17,7 +18,8 @@ public:
 private:
     GLFWwindow* window;
     bool running;
-    std::unique_ptr<std::thread> rayTracerThread;
+    std::unique_ptr<std::thread> raytracerThread;
+    std::unique_ptr<RaytracerMT> raytracerPtr;
     uint32_t imageTexture;
     std::shared_ptr<std::vector<GLubyte>> imageTextureData;
     int imageWidth, imageHeight;

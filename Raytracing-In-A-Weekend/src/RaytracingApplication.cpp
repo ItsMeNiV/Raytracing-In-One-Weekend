@@ -1,5 +1,4 @@
 #include "RaytracingApplication.h"
-#include "Raytracer.h"
 
 RaytracingApplication::RaytracingApplication()
 	: running(false), imageTexture(0), imageWidth(1600), imageHeight(900),
@@ -21,6 +20,9 @@ RaytracingApplication::RaytracingApplication()
 
 RaytracingApplication::~RaytracingApplication()
 {
+	raytracerPtr->Cancel();
+	raytracerThread->join();
+	raytracerPtr.release();
 	glfwTerminate();
 }
 
@@ -103,8 +105,8 @@ void RaytracingApplication::Run()
 
 	while (!glfwWindowShouldClose(window))
 	{
-		if (rayTracerThread && !running && rayTracerThread->joinable())
-			rayTracerThread->join();
+		if (raytracerThread && !running && raytracerThread->joinable())
+			raytracerThread->join();
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -145,12 +147,12 @@ void RaytracingApplication::runRaytracer()
 {
 	imageTextureData = std::make_shared<std::vector<GLubyte>>();
 	imageTextureData->resize(imageWidth * imageHeight * 4);
-	rayTracerThread = std::make_unique<std::thread>([this]
+	raytracerThread = std::make_unique<std::thread>([this]
 	{
 			//Image
 			const double aspectRatio = imageWidth / imageHeight;
 			const int samplesPerPixel = 20;
-			const int maxDepth = 5;
+			const int maxDepth = 50;
 
 			//World
 			HittableList world = randomScene();
@@ -164,9 +166,9 @@ void RaytracingApplication::runRaytracer()
 			Camera cam(lookfrom, lookat, vup, 20.0, aspectRatio, aperture, distToFocus);
 
 			//Render
-			//RaytracerNormal tracer(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
-			RaytracerMT tracer(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
-			tracer.run();
+			//raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+			raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+			raytracerPtr->Run();
 			running = false;
 	});
 }
