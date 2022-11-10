@@ -2,7 +2,8 @@
 #include "Raytracer.h"
 
 RaytracingApplication::RaytracingApplication()
-	: window(glfwCreateWindow(800, 600, "Raytracing in a Weekend impl. by Yannik Hodel", NULL, NULL)), running(false), imageTexture(0), imageWidth(800), imageHeight(600),
+	: running(false), imageTexture(0), imageWidth(1600), imageHeight(900),
+	window(glfwCreateWindow(1600, 900, "Raytracing in a Weekend impl. by Yannik Hodel", NULL, NULL)),
 	imageTextureData(std::make_shared<std::vector<GLubyte>>())
 {
 	imageTextureData->resize(imageWidth * imageHeight * 4);
@@ -15,7 +16,7 @@ RaytracingApplication::RaytracingApplication()
 	glfwSetKeyCallback(window, keyCallback);
 	glfwSetWindowUserPointer(window, this);
 
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, imageWidth, imageHeight);
 }
 
 RaytracingApplication::~RaytracingApplication()
@@ -124,6 +125,7 @@ void RaytracingApplication::Run()
 void RaytracingApplication::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
+	RaytracingApplication* app = (RaytracingApplication*)glfwGetWindowUserPointer(window);
 }
 
 void RaytracingApplication::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -147,8 +149,8 @@ void RaytracingApplication::runRaytracer()
 	{
 			//Image
 			const double aspectRatio = imageWidth / imageHeight;
-			const int samplesPerPixel = 200;
-			const int maxDepth = 50;
+			const int samplesPerPixel = 20;
+			const int maxDepth = 5;
 
 			//World
 			HittableList world = randomScene();
