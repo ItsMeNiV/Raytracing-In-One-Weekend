@@ -21,6 +21,7 @@ public:
 	{}
 	
 	virtual void Run() = 0;
+	virtual void Cancel() = 0;
 
 protected:
 	std::shared_ptr<std::vector<GLubyte>> mImageTextureData;
@@ -38,9 +39,17 @@ class RaytracerNormal : public Raytracer
 {
 public:
 	RaytracerNormal(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
-		: Raytracer(imageTextureData, camera, world, imageHeight, imageWidth, samplesPerPixel, maxDepth) {}
+		: Raytracer(imageTextureData, camera, world, imageHeight, imageWidth, samplesPerPixel, maxDepth), cancelRaytracer(false) {}
 
 	virtual void Run() override;
+
+	virtual void Cancel()
+	{
+		cancelRaytracer = true;
+	}
+
+private:
+	bool cancelRaytracer;
 };
 
 class RaytracerMT : public Raytracer
@@ -52,7 +61,8 @@ public:
 
 	virtual void Run() override;
 
-	void Cancel() {
+	virtual void Cancel()
+	{
 		cancelThreads = true;
 	}
 

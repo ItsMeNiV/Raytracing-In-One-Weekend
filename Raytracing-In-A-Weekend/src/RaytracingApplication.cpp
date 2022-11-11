@@ -5,6 +5,9 @@
 
 static int imageWidth = 1600;
 static int imageHeight = 900;
+static int samplesPerPixel = 20;
+static int maxDepth = 50;
+static bool useMultithreading = true;
 
 RaytracingApplication::RaytracingApplication()
 	: running(false), imageTexture(0),
@@ -137,11 +140,17 @@ void RaytracingApplication::Run()
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 		ImGui::Begin("Render settings", NULL, windowFlags);
-		ImGui::SetWindowSize({ 300.0f, 100.0f });
+		ImGui::SetWindowSize({ 400.0f, 170.0f });
 		ImGui::SetWindowPos({ 0.0f, 0.0f });
-		
+
+		ImGui::BeginDisabled(running);
 		ImGui::InputInt("Image width", &imageWidth);
 		ImGui::InputInt("Image height", &imageHeight);
+		ImGui::InputInt("Samples per pixel", &samplesPerPixel);
+		ImGui::InputInt("Max depth", &maxDepth);
+
+		ImGui::Checkbox("Use multithreading", &useMultithreading);
+
 		if (ImGui::Button("Render"))
 		{
 			if (!running)
@@ -150,6 +159,7 @@ void RaytracingApplication::Run()
 				runRaytracer();
 			}
 		}
+		ImGui::EndDisabled();
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel"))
 		{
@@ -208,8 +218,6 @@ void RaytracingApplication::runRaytracer()
 	{
 			//Image
 			const double aspectRatio = imageWidth / imageHeight;
-			const int samplesPerPixel = 20;
-			const int maxDepth = 50;
 
 			//World
 			HittableList world = randomScene();
@@ -223,9 +231,14 @@ void RaytracingApplication::runRaytracer()
 			Camera cam(lookfrom, lookat, vup, 20.0, aspectRatio, aperture, distToFocus);
 
 			//Render
-			//raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
-			raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+			if(useMultithreading)
+				raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+			else
+				raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, cam, world, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+
 			raytracerPtr->Run();
+
+
 			running = false;
 	});
 }

@@ -46,6 +46,9 @@ void RaytracerNormal::Run()
 {
 	for (int j = mImageHeight - 1; j >= 0; --j)
 	{
+		if (cancelRaytracer)
+			return;
+
 		std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
 		for (int i = 0; i < mImageWidth; ++i)
 		{
@@ -88,27 +91,21 @@ void RaytracerMT::Run()
 	const int threadCount = std::thread::hardware_concurrency() - 2;
 
 	int linesPerThread = mImageHeight / threadCount;
-	int currentLine = 0;
+	mCurrentLineNumber = mImageHeight-1;
 	for (int i = 0; i < threadCount; i++)
 	{
-		std::vector<int> linesForThread;
-		linesForThread.resize(linesPerThread);
-		for (int i = 0; i < linesPerThread; i++)
-		{
-			linesForThread[i] = currentLine++;
-		}
-		threads.push_back(std::thread([this, linesForThread]
+		threads.push_back(std::thread([this]
 		{
 				while (!cancelThreads)
 				{
 					int lineNumber = 0;
 					{
 						const std::lock_guard<std::mutex> lock(mLineMutex);
-						lineNumber = mCurrentLineNumber++;
+						lineNumber = mCurrentLineNumber--;
 					}
 					this->writeLine(lineNumber);
 
-					if (mCurrentLineNumber == mImageHeight) return;
+					if (mCurrentLineNumber == 0) return;
 				}
 		}));
 	}
