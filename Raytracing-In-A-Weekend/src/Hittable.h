@@ -27,7 +27,44 @@ public:
 	virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const = 0;
 };
 
-class Sphere : public Hittable {
+class Triangle : public Hittable
+{
+public:
+    Triangle() {}
+    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, std::shared_ptr<Material> material) : v0(v0), v1(v1), v2(v2), matPtr(material) {}
+
+    virtual bool Hit(
+        const Ray& r, double tMin, double tMax, HitRecord& rec) const override
+    {
+        Vec3 v1v0 = v1 - v0;
+        Vec3 v2v0 = v2 - v0;
+        Vec3 rov0 = r.origin - v0;
+
+        Vec3 n = cross(v1v0, v2v0);
+        Vec3 q = cross(rov0, r.direction);
+        double d = 1.0 / dot(r.direction, n);
+        float u = d * dot(-q, v2v0);
+        float v = d * dot(q, v1v0);
+        float t = d * dot(-n, rov0);
+
+        if (u < 0.0 || v < 0.0 || (u + v)>1.0 || dot(n, r.direction) == 0.0 || t < 0)
+            return false;
+
+        rec.t = t;
+        rec.p = r.At(rec.t);
+        rec.setFaceNormal(r, unitVector(n));
+        rec.matPtr = matPtr;
+
+        return true;
+    }
+
+public:
+    Vec3 v0, v1, v2;
+    std::shared_ptr<Material> matPtr;
+};
+
+class Sphere : public Hittable
+{
 public:
     Sphere() {}
     Sphere(Vec3 cen, double r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};

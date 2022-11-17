@@ -7,6 +7,10 @@ class Material
 {
 public:
     virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const = 0;
+
+    virtual Vec3 emitted(double u, double v, const Vec3& p) const {
+        return Vec3(0, 0, 0);
+    }
 };
 
 class Lambertian : public Material
@@ -88,4 +92,22 @@ private:
         r0 = r0 * r0;
         return r0 + (1 - r0) * pow((1 - cosine), 5);
     }
+};
+
+class DiffuseLight : public Material
+{
+public:
+    DiffuseLight(Vec3 c) : emit(c) {}
+
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    {
+        return false;
+    }
+
+    virtual Vec3 emitted(double u, double v, const Vec3& p) const override {
+        return emit;
+    }
+
+public:
+    Vec3 emit;
 };
