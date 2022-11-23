@@ -7,3 +7,6 @@
 [submodule "Raytracing-In-A-Weekend/vendor/imgui"]
 	path = Raytracing-In-A-Weekend/vendor/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "Raytracing-In-A-Weekend/vendor/assimp"]
+	path = Raytracing-In-A-Weekend/vendor/assimp
+	url = https://github.com/assimp/assimp.git

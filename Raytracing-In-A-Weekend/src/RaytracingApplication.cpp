@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "Mesh.h"
 
 static int imageWidth = 1600;
 static int imageHeight = 900;
@@ -205,6 +206,9 @@ void RaytracingApplication::runRaytracer()
 				//World
 				HittableList world = cornellBox();// = randomScene();
 				Vec3 background = Vec3(0.0, 0.0, 0.0);
+
+				std::shared_ptr<Mesh> monkey = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/monkey/scene.gltf");
+				world.add(monkey);
 
 				//Camera
 				Vec3 lookfrom = { 278.0, 278.0, -800.0 };

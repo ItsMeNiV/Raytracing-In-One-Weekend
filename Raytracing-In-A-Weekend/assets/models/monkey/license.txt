@@ -1,0 +1,11 @@
+Model Information:
+* title:	Monkey
+* source:	https://sketchfab.com/3d-models/monkey-6d600beeb1f9425980fa0244e9e44ca6
+* author:	ImJeno (https://sketchfab.com/ImJeno)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Monkey" (https://sketchfab.com/3d-models/monkey-6d600beeb1f9425980fa0244e9e44ca6) by ImJeno (https://sketchfab.com/ImJeno) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
