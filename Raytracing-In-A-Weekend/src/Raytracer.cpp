@@ -13,10 +13,10 @@ Vec3 Raytracer::rayColor(const Ray& r, int depth)
 	Ray scattered;
 	Vec3 attenuation;
 	Vec3 emitted = rec.matPtr->emitted(0.0, 0.0, rec.p);
-	if (rec.matPtr->scatter(r, rec, attenuation, scattered))
-		return emitted + attenuation * rayColor(scattered, depth - 1);
+	if (!rec.matPtr->scatter(r, rec, attenuation, scattered))
+		return emitted;
 
-	return emitted;
+	return emitted + attenuation * rayColor(scattered, depth - 1);
 }
 
 void Raytracer::writeColor(Vec3 pixelColor, int samplesPerPixel, int lineNumber, int columnNumber)
@@ -173,23 +173,23 @@ HittableList cornellBox()
 	auto green = std::make_shared<Lambertian>(Vec3(0.12, 0.45, 0.15));
 	auto light = std::make_shared<DiffuseLight>(Vec3(15, 15, 15));
 
-	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 0.0), Vec3(555.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), green));
-	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 0.0), Vec3(555.0, 555.0, 555.0), Vec3(555.0, 0.0, 555.0), green)); //Left
+	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 0.0), Vec3(555.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), green, ""));
+	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 0.0), Vec3(555.0, 555.0, 555.0), Vec3(555.0, 0.0, 555.0), green, "")); //Left
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 555.0, 0.0), Vec3(0.0, 555.0, 555.0), red));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 555.0, 555.0), Vec3(0.0, 0.0, 555.0), red)); //Right
+	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 555.0, 0.0), Vec3(0.0, 555.0, 555.0), red, ""));
+	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 555.0, 555.0), Vec3(0.0, 0.0, 555.0), red, "")); //Right
 
-	objects.add(make_shared<Triangle>(Vec3(213.0, 554.0, 227.0), Vec3(343.0, 554.0, 227.0), Vec3(343.0, 554.0, 332.0), light));
-	objects.add(make_shared<Triangle>(Vec3(213.0, 554.0, 227.0), Vec3(343.0, 554.0, 332.0), Vec3(213.0, 554.0, 332.0), light)); //Light
+	objects.add(make_shared<Triangle>(Vec3(213.0, 554.0, 227.0), Vec3(343.0, 554.0, 227.0), Vec3(343.0, 554.0, 332.0), light, ""));
+	objects.add(make_shared<Triangle>(Vec3(213.0, 554.0, 227.0), Vec3(343.0, 554.0, 332.0), Vec3(213.0, 554.0, 332.0), light, "")); //Light
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(555.0, 0.0, 0.0), Vec3(555.0, 0.0, 555.0), white));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(555.0, 0.0, 555.0), Vec3(0.0, 0.0, 555.0), white)); //Floor
+	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(555.0, 0.0, 0.0), Vec3(555.0, 0.0, 555.0), white, ""));
+	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(555.0, 0.0, 555.0), Vec3(0.0, 0.0, 555.0), white, "")); //Floor
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 555.0, 0.0), Vec3(555.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), white));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), Vec3(0.0, 555.0, 555.0), white)); //Top
+	objects.add(make_shared<Triangle>(Vec3(0.0, 555.0, 0.0), Vec3(555.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), white, ""));
+	objects.add(make_shared<Triangle>(Vec3(0.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), Vec3(0.0, 555.0, 555.0), white, "")); //Top
 
-	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 555.0), Vec3(0.0, 0.0, 555.0), Vec3(0.0, 555.0, 555.0), white));
-	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 555.0), Vec3(0.0, 555.0, 555.0), Vec3(555.0, 555.0, 555.0), white)); //Back
+	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 555.0), Vec3(555.0, 0.0, 555.0), Vec3(555.0, 555.0, 555.0), white, "back"));
+	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 555.0), Vec3(555.0, 555.0, 555.0), Vec3(0.0, 555.0, 555.0), white, "back")); //Back
 
 	return objects;
 }

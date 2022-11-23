@@ -211,7 +211,7 @@ void RaytracingApplication::runRaytracer()
 				Vec3 lookat = { 278.0, 278.0, 0.0 };
 				Vec3 vup = { 0.0, 1.0, 0.0 };
 				double distToFocus = 10.0;
-				double aperture = 0.1;
+				double aperture = 0.0;
 				Camera cam(lookfrom, lookat, vup, 40.0, aspectRatio, aperture, distToFocus);
 
 				//Render

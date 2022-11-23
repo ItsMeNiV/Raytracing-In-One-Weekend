@@ -31,36 +31,47 @@ class Triangle : public Hittable
 {
 public:
     Triangle() {}
-    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, std::shared_ptr<Material> material) : v0(v0), v1(v1), v2(v2), matPtr(material) {}
+    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, std::shared_ptr<Material> material, std::string&& dbgName) : v0(v0), v1(v1), v2(v2), matPtr(material), debugName(std::move(dbgName)) {}
 
     virtual bool Hit(
         const Ray& r, double tMin, double tMax, HitRecord& rec) const override
     {
-        Vec3 v1v0 = v1 - v0;
-        Vec3 v2v0 = v2 - v0;
-        Vec3 rov0 = r.origin - v0;
-
-        Vec3 n = cross(v1v0, v2v0);
-        Vec3 q = cross(rov0, r.direction);
-        double d = 1.0 / dot(r.direction, n);
-        float u = d * dot(-q, v2v0);
-        float v = d * dot(q, v1v0);
-        float t = d * dot(-n, rov0);
-
-        if (u < 0.0 || v < 0.0 || (u + v)>1.0 || dot(n, r.direction) == 0.0 || t < 0)
+        const double EPSILON = 1e-8;
+        Vec3 edge1, edge2, h, s, q;
+        double a, f, u, v;
+        edge1 = v1 - v0;
+        edge2 = v2 - v0;
+        h = cross(r.direction, edge2);
+        a = dot(edge1, h);
+        if (a > -EPSILON && a < EPSILON)
+            return false;    // This ray is parallel to this triangle.
+        f = 1.0 / a;
+        s = r.origin - v0;
+        u = f * dot(s, h);
+        if (u < 0.0 || u > 1.0)
             return false;
-
-        rec.t = t;
-        rec.p = r.At(rec.t);
-        rec.setFaceNormal(r, unitVector(n));
-        rec.matPtr = matPtr;
-
-        return true;
+        q = cross(s, edge1);
+        v = f * dot(r.direction, q);
+        if (v < 0.0 || u + v > 1.0)
+            return false;
+        // At this stage we can compute t to find out where the intersection point is on the line.
+        double t = f * dot(edge2, q);
+        if (t > EPSILON) // ray intersection
+        {
+            rec.t = t;
+            rec.p = r.At(rec.t);
+            rec.setFaceNormal(r, unitVector(cross(edge2, edge1)));
+            rec.matPtr = matPtr;
+            return true;
+        }
+        else // This means that there is a line intersection but not a ray intersection.
+            return false;
     }
 
 public:
     Vec3 v0, v1, v2;
     std::shared_ptr<Material> matPtr;
+    std::string debugName;
 };
 
 class Sphere : public Hittable
