@@ -204,15 +204,17 @@ void RaytracingApplication::runRaytracer()
 				const double aspectRatio = imageWidth / imageHeight;
 
 				//World
-				HittableList world = cornellBox();// = randomScene();
-				Vec3 background = Vec3(0.0, 0.0, 0.0);
+				HittableList world;// = cornellBox();// = randomScene();
+				Vec3 background = Vec3(1.0, 1.0, 1.0);
 
-				std::shared_ptr<Mesh> monkey = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/monkey/scene.gltf");
+				std::shared_ptr<Material> monkeyMat = std::make_shared<Lambertian>(Vec3(0.65, 0.05, 0.05));
+				std::shared_ptr<Mesh> monkey = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/monkey/scene.gltf", monkeyMat);
 				world.add(monkey);
 
 				//Camera
-				Vec3 lookfrom = { 278.0, 278.0, -800.0 };
-				Vec3 lookat = { 278.0, 278.0, 0.0 };
+				//Vec3 lookfrom = { 278.0, 278.0, -800.0 };
+				Vec3 lookfrom = { 0.0, 0.0, -5.0 };
+				Vec3 lookat = { 0.0, 0.0, 0.0 };
 				Vec3 vup = { 0.0, 1.0, 0.0 };
 				double distToFocus = 10.0;
 				double aperture = 0.0;
