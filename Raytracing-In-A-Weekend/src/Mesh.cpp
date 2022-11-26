@@ -33,11 +33,15 @@ void Mesh::processNode(aiNode* node, const aiScene* scene)
 
 void Mesh::processMesh(aiMesh* mesh)
 {
-    for (unsigned int i = 0; i < mesh->mNumVertices; i+=3)
+    for (unsigned int f = 0; f < mesh->mNumFaces; f++)
     {
-        Vec3 pos0(position.x + mesh->mVertices[i].x, position.y + mesh->mVertices[i].y, position.z + mesh->mVertices[i].z);
-        Vec3 pos1(position.x + mesh->mVertices[i+1].x, position.y + mesh->mVertices[i+1].y, position.z + mesh->mVertices[i+1].z);
-        Vec3 pos2(position.x + mesh->mVertices[i+2].x, position.y + mesh->mVertices[i+2].y, position.z + mesh->mVertices[i+2].z);
+        aiFace face = mesh->mFaces[f];
+        unsigned int v0 = face.mIndices[0];
+        unsigned int v1 = face.mIndices[1];
+        unsigned int v2 = face.mIndices[2];
+        Vec3 pos0(position.x + mesh->mVertices[v0].x, position.y + mesh->mVertices[v0].y, position.z + mesh->mVertices[v0].z);
+        Vec3 pos1(position.x + mesh->mVertices[v1].x, position.y + mesh->mVertices[v1].y, position.z + mesh->mVertices[v1].z);
+        Vec3 pos2(position.x + mesh->mVertices[v2].x, position.y + mesh->mVertices[v2].y, position.z + mesh->mVertices[v2].z);
         Triangle tri(pos0, pos1, pos2, matPtr, "");
         triangles.push_back(tri);
     }
