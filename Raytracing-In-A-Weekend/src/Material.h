@@ -1,5 +1,6 @@
 #pragma once
 #include "RTWeekend.h"
+#include "Texture.h"
 
 struct HitRecord;
 
@@ -110,4 +111,30 @@ public:
 
 public:
     Vec3 emit;
+};
+
+class PBRMaterial : public Material
+{
+public:
+    PBRMaterial(std::shared_ptr<Texture> diffuse) : diffuseTexture(diffuse) {}
+
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    {
+#ifdef HEMISPHERE_DIFFUSE
+        auto scatterDirection = randomInHemisphere(rec.normal);
+#else
+        auto scatterDirection = rec.normal + randomUnitVector();
+#endif
+
+        if (vecNearZero(scatterDirection))
+            scatterDirection = rec.normal;
+
+        scattered = Ray(rec.p, scatterDirection);
+        attenuation = diffuseTexture.At(rec.u, rec.v);
+        return true;
+    }
+
+private:
+    std::shared_ptr<Texture> diffuseTexture;
+
 };
