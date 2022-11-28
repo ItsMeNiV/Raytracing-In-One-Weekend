@@ -130,7 +130,7 @@ public:
             scatterDirection = rec.normal;
 
         scattered = Ray(rec.p, scatterDirection);
-        attenuation = diffuseTexture.At(rec.u, rec.v);
+        attenuation = diffuseTexture->At(rec.u, rec.v);
         return true;
     }
 
