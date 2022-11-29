@@ -1,0 +1,11 @@
+Model Information:
+* title:	Awkward Look Monkey
+* source:	https://sketchfab.com/3d-models/awkward-look-monkey-f26639ba7b3e477aa7974d0160a38010
+* author:	Danyy59 (https://sketchfab.com/daniel.saucedo)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Awkward Look Monkey" (https://sketchfab.com/3d-models/awkward-look-monkey-f26639ba7b3e477aa7974d0160a38010) by Danyy59 (https://sketchfab.com/daniel.saucedo) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

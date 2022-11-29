@@ -8,7 +8,7 @@
 class Mesh : public Hittable
 {
 public:
-	Mesh(Vec3 pos, const char* location, std::shared_ptr<Material> matPtr);
+	Mesh(Vec3 pos, std::string const& location);
 
     virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const override
     {
@@ -31,8 +31,9 @@ private:
 	Vec3 position;
 	std::vector<Triangle> triangles;
     std::shared_ptr<Material> matPtr;
+    std::string directory;
 
     void processNode(aiNode* node, const aiScene* scene);
-    void processMesh(aiMesh* mesh);
+    void processMesh(aiMesh* mesh, const aiScene* scene);
 
 };

@@ -1,7 +1,9 @@
 #include "Mesh.h"
+#include "Texture.h"
+#include "Material.h"
 
-Mesh::Mesh(Vec3 pos, const char* location, std::shared_ptr<Material> matPtr)
-    : position(pos), matPtr(matPtr)
+Mesh::Mesh(Vec3 pos, std::string const& location)
+    : position(pos), matPtr(nullptr), directory(location.substr(0, location.find_last_of('/')))
 {
     Assimp::Importer importer;
 
@@ -22,7 +24,7 @@ void Mesh::processNode(aiNode* node, const aiScene* scene)
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        processMesh(mesh);
+        processMesh(mesh, scene);
     }
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
@@ -31,8 +33,19 @@ void Mesh::processNode(aiNode* node, const aiScene* scene)
     }
 }
 
-void Mesh::processMesh(aiMesh* mesh)
+void Mesh::processMesh(aiMesh* mesh, const aiScene* scene)
 {
+    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+    if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+    {
+        aiString str;
+        material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
+
+        std::string filename = directory + '/' + str.C_Str();
+        std::shared_ptr<Texture> diffuseTexture = std::make_shared<Texture>(filename.c_str());
+        matPtr = std::make_shared<PBRMaterial>(diffuseTexture);
+    }
+
     for (unsigned int f = 0; f < mesh->mNumFaces; f++)
     {
         aiFace face = mesh->mFaces[f];
@@ -42,7 +55,21 @@ void Mesh::processMesh(aiMesh* mesh)
         Vec3 pos0(position.x + mesh->mVertices[v0].x, position.y + mesh->mVertices[v0].y, position.z + mesh->mVertices[v0].z);
         Vec3 pos1(position.x + mesh->mVertices[v1].x, position.y + mesh->mVertices[v1].y, position.z + mesh->mVertices[v1].z);
         Vec3 pos2(position.x + mesh->mVertices[v2].x, position.y + mesh->mVertices[v2].y, position.z + mesh->mVertices[v2].z);
-        Triangle tri(pos0, pos1, pos2, matPtr, "");
+
+        Vec3 tex0(0.0, 0.0, 0.0);
+        Vec3 tex1(0.1, 0.0, 0.0);
+        Vec3 tex2(0.5, 1.0, 0.0);
+        if (mesh->mTextureCoords[0])
+        {
+            tex0.x = mesh->mTextureCoords[0][v0].x;
+            tex0.y = mesh->mTextureCoords[0][v0].y;
+            tex1.x = mesh->mTextureCoords[0][v1].x;
+            tex1.y = mesh->mTextureCoords[0][v1].y;
+            tex2.x = mesh->mTextureCoords[0][v2].x;
+            tex2.y = mesh->mTextureCoords[0][v2].y;
+        }
+        Triangle tri(pos0, pos1, pos2, tex0, tex1, tex2, matPtr, "");
         triangles.push_back(tri);
     }
+
 }

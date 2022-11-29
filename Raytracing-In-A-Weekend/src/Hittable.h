@@ -33,7 +33,9 @@ class Triangle : public Hittable
 {
 public:
     Triangle() {}
-    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, std::shared_ptr<Material> material, std::string&& dbgName) : v0(v0), v1(v1), v2(v2), matPtr(material), debugName(std::move(dbgName)) {}
+    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, std::shared_ptr<Material> material, std::string&& dbgName) : v0(v0), v1(v1), v2(v2), t0(-1, -1, -1), t1(-1, -1, -1), t2(-1, -1, -1), matPtr(material), debugName(std::move(dbgName)) {}
+    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, Vec3 t0, Vec3 t1, Vec3 t2, std::shared_ptr<Material> material, std::string&& dbgName)
+        : v0(v0), v1(v1), v2(v2), t0(t0), t1(t1), t2(t2), matPtr(material), debugName(std::move(dbgName)) {}
 
     virtual bool Hit(
         const Ray& r, double tMin, double tMax, HitRecord& rec) const override
@@ -58,11 +60,25 @@ public:
             return false;
         // At this stage we can compute t to find out where the intersection point is on the line.
         double t = f * dot(edge2, q);
+        if (t < tMin || tMax < t)
+            return false; //Intersection is not closer than the closest so far
+
         if (t > EPSILON) // ray intersection
         {
             rec.t = t;
             rec.p = r.At(rec.t);
             rec.setFaceNormal(r, unitVector(cross(edge2, edge1)));
+            if(t0.x != -1.0)
+            {
+                Vec3 barycentricCoord = u * t0 + v * t1 + (1 - u - v) * t2;
+                rec.u = barycentricCoord.x;
+                rec.v = barycentricCoord.y;
+            }
+            else
+            {
+                rec.u = u;
+                rec.v = v;
+            }
             rec.matPtr = matPtr;
             return true;
         }
@@ -71,7 +87,8 @@ public:
     }
 
 public:
-    Vec3 v0, v1, v2;
+    Vec3 v0, v1, v2; //Vertex positions
+    Vec3 t0, t1, t2; //Texture coordinates
     std::shared_ptr<Material> matPtr;
     std::string debugName;
 };
