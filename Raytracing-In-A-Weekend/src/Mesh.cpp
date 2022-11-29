@@ -38,12 +38,19 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene)
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
     if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
     {
+        std::shared_ptr<Texture> diffuseTexture = nullptr;
         aiString str;
         material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
 
         std::string filename = directory + '/' + str.C_Str();
-        std::shared_ptr<Texture> diffuseTexture = std::make_shared<Texture>(filename.c_str());
-        matPtr = std::make_shared<PBRMaterial>(diffuseTexture);
+        if(std::find(loadedTextures.begin(), loadedTextures.end(), filename) == loadedTextures.end())
+        {
+            loadedTextures.push_back(filename);
+            diffuseTexture = std::make_shared<Texture>(filename.c_str());
+        }
+
+        if(!matPtr)
+            matPtr = std::make_shared<PBRMaterial>(diffuseTexture);
     }
 
     for (unsigned int f = 0; f < mesh->mNumFaces; f++)

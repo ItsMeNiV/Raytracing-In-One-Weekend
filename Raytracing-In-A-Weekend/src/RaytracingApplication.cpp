@@ -6,6 +6,8 @@
 
 static int imageWidth = 1600;
 static int imageHeight = 900;
+static int imageWidthSetting = 1600;
+static int imageHeightSetting = 900;
 static int samplesPerPixel = 20;
 static int maxDepth = 50;
 static bool useMultithreading = true;
@@ -101,8 +103,8 @@ void RaytracingApplication::Run()
 		ImGui::SetWindowPos({ 0.0f, 0.0f });
 
 		ImGui::BeginDisabled(running);
-		ImGui::InputInt("Image width", &imageWidth);
-		ImGui::InputInt("Image height", &imageHeight);
+		ImGui::InputInt("Image width", &imageWidthSetting);
+		ImGui::InputInt("Image height", &imageHeightSetting);
 		ImGui::InputInt("Samples per pixel", &samplesPerPixel);
 		ImGui::InputInt("Max depth", &maxDepth);
 
@@ -112,6 +114,8 @@ void RaytracingApplication::Run()
 		{
 			if (!running)
 			{
+				imageWidth = imageWidthSetting;
+				imageHeight = imageHeightSetting;
 				running = true;
 				runRaytracer();
 			}
@@ -209,6 +213,8 @@ void RaytracingApplication::runRaytracer()
 
 				std::shared_ptr<Mesh> monkey = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/awkward_monkey/scene.gltf");
 				world.add(monkey);
+				//std::shared_ptr<Mesh> armour = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/parade_armour/scene.gltf");
+				//world.add(armour);
 
 				//Camera
 				//Vec3 lookfrom = { 278.0, 278.0, -800.0 };

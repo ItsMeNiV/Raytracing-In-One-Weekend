@@ -32,6 +32,7 @@ private:
 	std::vector<Triangle> triangles;
     std::shared_ptr<Material> matPtr;
     std::string directory;
+    std::vector<std::string> loadedTextures;
 
     void processNode(aiNode* node, const aiScene* scene);
     void processMesh(aiMesh* mesh, const aiScene* scene);
