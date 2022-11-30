@@ -48,9 +48,9 @@ void Mesh::processNode(aiNode* node, const aiScene* scene, double& xMin, double&
 void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax)
 {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+    std::shared_ptr<Texture> diffuseTexture = nullptr;
     if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
     {
-        std::shared_ptr<Texture> diffuseTexture = nullptr;
         aiString str;
         material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
 
@@ -63,6 +63,22 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double&
 
         if(!matPtr)
             matPtr = std::make_shared<PBRMaterial>(diffuseTexture);
+    }
+    if (material->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) > 0 && matPtr)
+    {
+        std::shared_ptr<Texture> roughnessTexture = nullptr;
+        aiString str;
+        material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &str);
+
+        std::string filename = directory + '/' + str.C_Str();
+        if (std::find(loadedTextures.begin(), loadedTextures.end(), filename) == loadedTextures.end())
+        {
+            loadedTextures.push_back(filename);
+            roughnessTexture = std::make_shared<Texture>(filename.c_str());
+        }
+
+        if(roughnessTexture)
+            std::static_pointer_cast<PBRMaterial, Material>(matPtr)->setRoughnessTexture(roughnessTexture);
     }
 
     for (unsigned int f = 0; f < mesh->mNumFaces; f++)

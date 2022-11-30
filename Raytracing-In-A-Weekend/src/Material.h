@@ -120,21 +120,30 @@ public:
 
     virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
     {
-#ifdef HEMISPHERE_DIFFUSE
-        auto scatterDirection = randomInHemisphere(rec.normal);
-#else
-        auto scatterDirection = rec.normal + randomUnitVector();
-#endif
-
-        if (vecNearZero(scatterDirection))
-            scatterDirection = rec.normal;
-
-        scattered = Ray(rec.p, scatterDirection);
         attenuation = diffuseTexture->At(rec.u, rec.v);
-        return true;
+
+        if (roughnessTexture)
+        {
+            Vec3 reflected = reflect(unitVector(rIn.direction), rec.normal);
+            scattered = Ray(rec.p, reflected + roughnessTexture->At(rec.u, rec.v) * randomVecInUnitSphere());
+            return (dot(scattered.direction, rec.normal) > 0);
+        }
+        else
+        {
+            auto scatterDirection = rec.normal + randomUnitVector();
+
+            if (vecNearZero(scatterDirection))
+                scatterDirection = rec.normal;
+
+            scattered = Ray(rec.p, scatterDirection);
+            return true;
+        }
     }
+
+    void setRoughnessTexture(std::shared_ptr<Texture> rough) { roughnessTexture = rough; }
 
 private:
     std::shared_ptr<Texture> diffuseTexture;
+    std::shared_ptr<Texture> roughnessTexture;
 
 };
