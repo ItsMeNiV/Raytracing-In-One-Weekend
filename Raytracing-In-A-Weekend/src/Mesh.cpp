@@ -80,6 +80,22 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double&
         if(roughnessTexture)
             std::static_pointer_cast<PBRMaterial, Material>(matPtr)->setRoughnessTexture(roughnessTexture);
     }
+    if (material->GetTextureCount(aiTextureType_NORMALS) > 0 && matPtr)
+    {
+        std::shared_ptr<Texture> normalTexture = nullptr;
+        aiString str;
+        material->GetTexture(aiTextureType_NORMALS, 0, &str);
+
+        std::string filename = directory + '/' + str.C_Str();
+        if (std::find(loadedTextures.begin(), loadedTextures.end(), filename) == loadedTextures.end())
+        {
+            loadedTextures.push_back(filename);
+            normalTexture = std::make_shared<Texture>(filename.c_str());
+        }
+
+        if (normalTexture)
+            std::static_pointer_cast<PBRMaterial, Material>(matPtr)->setNormalTexture(normalTexture);
+    }
 
     for (unsigned int f = 0; f < mesh->mNumFaces; f++)
     {

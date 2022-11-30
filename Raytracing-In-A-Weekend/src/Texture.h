@@ -34,10 +34,11 @@ public:
 			delete[] textureData;
 	}
 
-	Vec3 At(double uCoord, double vCoord)
+	Vec3& At(double uCoord, double vCoord)
 	{
 		int texelX = (uCoord * textureWidth) - 0.5;
 		int texelY = ((1-vCoord) * textureHeight) - 0.5;
+
 		return textureData[texelY * textureHeight + texelX];
 	}
 

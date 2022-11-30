@@ -120,20 +120,24 @@ public:
 
     virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
     {
+        //Override normal with normalmap if available
+        Vec3 normal = normalTexture ? unitVector(normalTexture->At(rec.u, rec.v) * 2.0 - 1.0) : rec.normal;
+        normal = rec.normal; //Normal-Mapping doesn't work properly yet
+
         attenuation = diffuseTexture->At(rec.u, rec.v);
 
         if (roughnessTexture)
         {
-            Vec3 reflected = reflect(unitVector(rIn.direction), rec.normal);
+            Vec3 reflected = reflect(unitVector(rIn.direction), normal);
             scattered = Ray(rec.p, reflected + roughnessTexture->At(rec.u, rec.v) * randomVecInUnitSphere());
-            return (dot(scattered.direction, rec.normal) > 0);
+            return (dot(scattered.direction, normal) > 0);
         }
         else
         {
-            auto scatterDirection = rec.normal + randomUnitVector();
+            auto scatterDirection = normal + randomUnitVector();
 
             if (vecNearZero(scatterDirection))
-                scatterDirection = rec.normal;
+                scatterDirection = normal;
 
             scattered = Ray(rec.p, scatterDirection);
             return true;
@@ -141,9 +145,11 @@ public:
     }
 
     void setRoughnessTexture(std::shared_ptr<Texture> rough) { roughnessTexture = rough; }
+    void setNormalTexture(std::shared_ptr<Texture> normal) {normalTexture = normal; }
 
 private:
     std::shared_ptr<Texture> diffuseTexture;
     std::shared_ptr<Texture> roughnessTexture;
+    std::shared_ptr<Texture> normalTexture;
 
 };

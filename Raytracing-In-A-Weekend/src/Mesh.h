@@ -12,7 +12,7 @@ public:
 
     virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const override
     {
-        if (!boundingBox->hit(r, tMin, tMax))
+        if (!boundingBox->Hit(r, tMin, tMax))
             return false;
 
         HitRecord tempRec;

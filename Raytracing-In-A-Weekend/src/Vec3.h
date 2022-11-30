@@ -10,6 +10,20 @@ public:
     Vec3(double x, double y, double z) : x(x), y(y), z(z) {}
 
     Vec3 operator-() const { return Vec3(-x, -y, -z); }
+    Vec3& operator+(const double v)
+    {
+        x += v;
+        y += v;
+        z += v;
+        return *this;
+    }
+    Vec3& operator-(const double v)
+    {
+        x -= v;
+        y -= v;
+        z -= v;
+        return *this;
+    }
 
     double operator[](int i) const
     {

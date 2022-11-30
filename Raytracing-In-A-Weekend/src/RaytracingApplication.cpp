@@ -209,21 +209,26 @@ void RaytracingApplication::runRaytracer()
 
 				//World
 				HittableList world;// = cornellBox();// = randomScene();
-				Vec3 background = Vec3(1.0, 1.0, 1.0);
+				Vec3 background = Vec3(0.0, 0.0, 0.0);
 
-				//std::shared_ptr<Mesh> monkey = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/awkward_monkey/scene.gltf");
-				//world.add(monkey);
-				std::shared_ptr<Mesh> vase = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/brass_vase/brass_vase_04_4k.gltf");
+				auto vase = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/brass_vase/brass_vase_04_4k.gltf");
 				world.add(vase);
 
-				std::shared_ptr<Material> greenMat = std::make_shared<Lambertian>(Vec3(0.0, 1.0, 0.0));
-				std::shared_ptr<Sphere> greenSphere = std::make_shared<Sphere>(Vec3(2.0, 0.0, 0.0), 1.9, greenMat);
-				world.add(greenSphere);
+				auto greenMat = std::make_shared<Lambertian>(Vec3(0.0, 1.0, 0.0));
+				auto redMat = std::make_shared<Lambertian>(Vec3(1.0, 0.0, 0.0));
+				auto blueMat = std::make_shared<Lambertian>(Vec3(0.0, 0.0, 1.0));
+				auto groundMaterial = std::make_shared<Lambertian>(Vec3(0.5, 0.5, 0.5));
+				auto lightMat = std::make_shared<DiffuseLight>(Vec3(1.0, 1.0, 1.0));
+				world.add(std::make_shared<Sphere>(Vec3(1.1, 0.0, 0.0), 1.0, greenMat));
+				world.add(std::make_shared<Sphere>(Vec3(-1.1, 0.0, 0.0), 1.0, redMat));
+				world.add(std::make_shared<Sphere>(Vec3(0.0, 0.0, 1.1), 1.0, blueMat));
+				world.add(std::make_shared<Sphere>(Vec3(0.0, 1.3, 0.0), 1.0, lightMat));
+				world.add(std::make_shared<Sphere>(Vec3(0.0, -1000.0, 0.0), 1000.0, groundMaterial));
 
 				//Camera
 				//Vec3 lookfrom = { 278.0, 278.0, -800.0 };
-				Vec3 lookfrom = { 0.0, 0.5, -0.5 };
-				Vec3 lookat = { 0.0, 0.0, 0.0 };
+				Vec3 lookfrom = { 0.0, 0.1, -0.5 };
+				Vec3 lookat = { 0.0, 0.1, 0.0 };
 				Vec3 vup = { 0.0, 1.0, 0.0 };
 				double distToFocus = 10.0;
 				double aperture = 0.0;

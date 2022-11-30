@@ -96,7 +96,7 @@ public:
 class Sphere : public Hittable
 {
 public:
-    Sphere() {}
+    Sphere() = default;
     Sphere(Vec3 cen, double r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};
 
     virtual bool Hit(
@@ -169,7 +169,7 @@ public:
     AABB() = default;
     AABB(const Vec3& a, const Vec3& b) : minimum(a), maximum(b) {}
 
-    bool hit(const Ray& r, double tMin, double tMax) const
+    bool Hit(const Ray& r, double tMin, double tMax) const
     {
         for (int a = 0; a < 3; a++) {
             auto invD = 1.0f / r.direction[a];
