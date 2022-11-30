@@ -12,6 +12,9 @@ public:
 
     virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const override
     {
+        if (!boundingBox->hit(r, tMin, tMax))
+            return false;
+
         HitRecord tempRec;
         bool hitAnything = false;
         auto closestSoFar = tMax;
@@ -28,13 +31,14 @@ public:
     }
 
 private:
+    std::shared_ptr<AABB> boundingBox;
 	Vec3 position;
 	std::vector<Triangle> triangles;
     std::shared_ptr<Material> matPtr;
     std::string directory;
     std::vector<std::string> loadedTextures;
 
-    void processNode(aiNode* node, const aiScene* scene);
-    void processMesh(aiMesh* mesh, const aiScene* scene);
+    void processNode(aiNode* node, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax);
+    void processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax);
 
 };

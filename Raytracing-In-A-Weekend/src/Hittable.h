@@ -162,3 +162,29 @@ public:
 
     std::vector<std::shared_ptr<Hittable>> objects;
 };
+
+class AABB
+{
+public:
+    AABB() = default;
+    AABB(const Vec3& a, const Vec3& b) : minimum(a), maximum(b) {}
+
+    bool hit(const Ray& r, double tMin, double tMax) const
+    {
+        for (int a = 0; a < 3; a++) {
+            auto invD = 1.0f / r.direction[a];
+            auto t0 = (minimum[a] - r.origin[a]) * invD;
+            auto t1 = (maximum[a] - r.origin[a]) * invD;
+            if (invD < 0.0f)
+                std::swap(t0, t1);
+            tMin = t0 > tMin ? t0 : tMin;
+            tMax = t1 < tMax ? t1 : tMax;
+            if (tMax <= tMin)
+                return false;
+        }
+        return true;
+    }
+
+public:
+    Vec3 minimum, maximum;
+};
