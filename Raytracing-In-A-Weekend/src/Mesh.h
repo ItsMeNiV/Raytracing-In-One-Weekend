@@ -8,7 +8,7 @@
 class Mesh : public Hittable
 {
 public:
-	Mesh(glm::vec3 pos, std::string const& location);
+	Mesh(glm::mat4 model, std::string const& location);
 
     virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override
     {
@@ -32,7 +32,7 @@ public:
 
 private:
     std::shared_ptr<AABB> boundingBox;
-	glm::vec3 position;
+    glm::mat4 modelMatrix;
 	std::vector<Triangle> triangles;
     std::shared_ptr<Material> matPtr;
     std::string directory;

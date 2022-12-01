@@ -3,8 +3,9 @@
 #include "Texture.h"
 #include "Material.h"
 
-Mesh::Mesh(glm::vec3 pos, std::string const& location)
-    : position(pos), matPtr(nullptr), directory(location.substr(0, location.find_last_of('/')))
+
+Mesh::Mesh(glm::mat4 model, std::string const& location)
+    : modelMatrix(model), matPtr(nullptr), directory(location.substr(0, location.find_last_of('/')))
 {
     Assimp::Importer importer;
 
@@ -104,9 +105,9 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
         unsigned int v0 = face.mIndices[0];
         unsigned int v1 = face.mIndices[1];
         unsigned int v2 = face.mIndices[2];
-        glm::vec3 pos0(position.x + mesh->mVertices[v0].x, position.y + mesh->mVertices[v0].y, position.z + mesh->mVertices[v0].z);
-        glm::vec3 pos1(position.x + mesh->mVertices[v1].x, position.y + mesh->mVertices[v1].y, position.z + mesh->mVertices[v1].z);
-        glm::vec3 pos2(position.x + mesh->mVertices[v2].x, position.y + mesh->mVertices[v2].y, position.z + mesh->mVertices[v2].z);
+        glm::vec3 pos0(mesh->mVertices[v0].x, mesh->mVertices[v0].y, mesh->mVertices[v0].z);
+        glm::vec3 pos1(mesh->mVertices[v1].x, mesh->mVertices[v1].y, mesh->mVertices[v1].z);
+        glm::vec3 pos2(mesh->mVertices[v2].x, mesh->mVertices[v2].y, mesh->mVertices[v2].z);
 
         glm::vec3 tex0(0.0f, 0.0f, 0.0f);
         glm::vec3 tex1(0.1f, 0.0f, 0.0f);
@@ -120,6 +121,11 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
             tex2.x = mesh->mTextureCoords[0][v2].x;
             tex2.y = mesh->mTextureCoords[0][v2].y;
         }
+
+        pos0 = glm::vec3(glm::vec4(pos0, 1.0f) * modelMatrix);
+        pos1 = glm::vec3(glm::vec4(pos1, 1.0f) * modelMatrix);
+        pos2 = glm::vec3(glm::vec4(pos2, 1.0f) * modelMatrix);
+
         Triangle tri(pos0, pos1, pos2, tex0, tex1, tex2, matPtr, "");
         triangles.push_back(tri);
 

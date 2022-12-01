@@ -211,7 +211,8 @@ void RaytracingApplication::runRaytracer()
 				HittableList world;// = cornellBox();// = randomScene();
 				glm::vec3 background = glm::vec3(0.0f, 0.0f, 0.0f);
 
-				auto vase = std::make_shared<Mesh>(glm::vec3(0.0f, 0.0f, 0.0f), "assets/models/brass_vase/brass_vase_04_4k.gltf");
+				glm::mat4 vaseModelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+				auto vase = std::make_shared<Mesh>(vaseModelMatrix, "assets/models/brass_vase/brass_vase_04_4k.gltf");
 				world.add(vase);
 
 				auto greenMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 1.0f, 0.0f));
