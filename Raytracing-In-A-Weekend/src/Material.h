@@ -7,19 +7,19 @@ struct HitRecord;
 class Material
 {
 public:
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const = 0;
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const = 0;
 
-    virtual Vec3 emitted(double u, double v, const Vec3& p) const {
-        return Vec3(0, 0, 0);
+    virtual glm::vec3 emitted(float u, float v, const glm::vec3& p) const {
+        return glm::vec3(0.0f, 0.0f, 0.0f);
     }
 };
 
 class Lambertian : public Material
 {
 public:
-    Lambertian(const Vec3& a) : albedo(a) {}
+    Lambertian(const glm::vec3& a) : albedo(a) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
     {
         #ifdef HEMISPHERE_DIFFUSE
         auto scatterDirection = randomInHemisphere(rec.normal);
@@ -36,45 +36,45 @@ public:
     }
 
 private:
-    Vec3 albedo;
+    glm::vec3 albedo;
 };
 
 class Metal : public Material
 {
 public:
-    Metal(const Vec3& a, double f) : albedo(a), fuzz(f < 1 ? f : 1) {}
+    Metal(const glm::vec3& a, float f) : albedo(a), fuzz(f < 1 ? f : 1) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
     {
-        Vec3 reflected = reflect(unitVector(rIn.direction), rec.normal);
+        glm::vec3 reflected = reflect(glm::normalize(rIn.direction), rec.normal);
         scattered = Ray(rec.p, reflected + fuzz*randomVecInUnitSphere());
         attenuation = albedo;
         return (dot(scattered.direction, rec.normal) > 0);
     }
 
 private:
-    Vec3 albedo;
-    double fuzz;
+    glm::vec3 albedo;
+    float fuzz;
 };
 
 class Dielectric : public Material
 {
 public:
-    Dielectric(double indexOfRefraction) : ir(indexOfRefraction) {}
+    Dielectric(float indexOfRefraction) : ir(indexOfRefraction) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
     {
-        attenuation = Vec3(1.0, 1.0, 1.0);
-        double refractionRatio = rec.frontFace ? (1.0 / ir) : ir;
+        attenuation = glm::vec3(1.0f, 1.0f, 1.0f);
+        float refractionRatio = rec.frontFace ? (1.0f / ir) : ir;
 
-        Vec3 unitDirection = unitVector(rIn.direction);
-        double cosTheta = fmin(dot(-unitDirection, rec.normal), 1.0);
-        double sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+        glm::vec3 unitDirection = glm::normalize(rIn.direction);
+        float cosTheta = fmin(dot(-unitDirection, rec.normal), 1.0f);
+        float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
 
-        bool cannotRefract = refractionRatio * sinTheta > 1.0;
-        Vec3 direction;
+        bool cannotRefract = refractionRatio * sinTheta > 1.0f;
+        glm::vec3 direction;
 
-        if (cannotRefract || reflectance(cosTheta, refractionRatio) > randomdouble())
+        if (cannotRefract || reflectance(cosTheta, refractionRatio) > randomfloat())
             direction = reflect(unitDirection, rec.normal);
         else
             direction = refract(unitDirection, rec.normal, refractionRatio);
@@ -84,12 +84,12 @@ public:
     }
 
 public:
-    double ir; //Index of Refraction 
+    float ir; //Index of Refraction 
 
 private:
-    static double reflectance(double cosine, double refIdx)
+    static float reflectance(float cosine, float refIdx)
     {
-        double r0 = (1 - refIdx) / (1 + refIdx);
+        float r0 = (1 - refIdx) / (1 + refIdx);
         r0 = r0 * r0;
         return r0 + (1 - r0) * pow((1 - cosine), 5);
     }
@@ -98,19 +98,19 @@ private:
 class DiffuseLight : public Material
 {
 public:
-    DiffuseLight(Vec3 c) : emit(c) {}
+    DiffuseLight(glm::vec3 c) : emit(c) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
     {
         return false;
     }
 
-    virtual Vec3 emitted(double u, double v, const Vec3& p) const override {
+    virtual glm::vec3 emitted(float u, float v, const glm::vec3& p) const override {
         return emit;
     }
 
 public:
-    Vec3 emit;
+    glm::vec3 emit;
 };
 
 class PBRMaterial : public Material
@@ -118,17 +118,17 @@ class PBRMaterial : public Material
 public:
     PBRMaterial(std::shared_ptr<Texture> diffuse) : diffuseTexture(diffuse) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, Vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
     {
         //Override normal with normalmap if available
-        Vec3 normal = normalTexture ? unitVector(normalTexture->At(rec.u, rec.v) * 2.0 - 1.0) : rec.normal;
+        glm::vec3 normal = normalTexture ? glm::normalize(normalTexture->At(rec.u, rec.v) * 2.0f - 1.0f) : rec.normal;
         normal = rec.normal; //Normal-Mapping doesn't work properly yet
 
         attenuation = diffuseTexture->At(rec.u, rec.v);
 
         if (roughnessTexture)
         {
-            Vec3 reflected = reflect(unitVector(rIn.direction), normal);
+            glm::vec3 reflected = reflect(glm::normalize(rIn.direction), normal);
             scattered = Ray(rec.p, reflected + roughnessTexture->At(rec.u, rec.v) * randomVecInUnitSphere());
             return (dot(scattered.direction, normal) > 0);
         }

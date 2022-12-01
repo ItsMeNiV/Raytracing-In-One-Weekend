@@ -178,19 +178,19 @@ void RaytracingApplication::keyCallback(GLFWwindow* window, int key, int scancod
 void RaytracingApplication::runRaytracer()
 {
 	//Image
-	const double aspectRatio = imageWidth / imageHeight;
+	const float aspectRatio = imageWidth / imageHeight;
 
 	//World
 	HittableList world = randomScene();
-	Vec3 background(1.0, 1.0, 1.0);
+	glm::vec3 background(1.0f, 1.0f, 1.0f);
 
 	//Camera
-	Vec3 lookfrom = { 13.0, 2.0, 3.0 };
-	Vec3 lookat = { 0.0, 0.0, 0.0 };
-	Vec3 vup = { 0.0, 1.0, 0.0 };
-	double distToFocus = 10.0;
-	double aperture = 0.1;
-	Camera cam(lookfrom, lookat, vup, 20.0, aspectRatio, aperture, distToFocus);
+	glm::vec3 lookfrom = { 13.0f, 2.0f, 3.0f };
+	glm::vec3 lookat = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
+	float distToFocus = 10.0f;
+	float aperture = 0.1f;
+	Camera cam(lookfrom, lookat, vup, 20.0f, aspectRatio, aperture, distToFocus);
 
 	imageTextureData = std::make_shared<std::vector<GLubyte>>();
 	imageTextureData->resize(imageWidth * imageHeight * 4);
@@ -205,34 +205,36 @@ void RaytracingApplication::runRaytracer()
 		raytracerThread = std::make_unique<std::thread>([this]
 			{
 				//Image
-				const double aspectRatio = imageWidth / imageHeight;
+				const float aspectRatio = imageWidth / imageHeight;
 
 				//World
 				HittableList world;// = cornellBox();// = randomScene();
-				Vec3 background = Vec3(0.0, 0.0, 0.0);
+				glm::vec3 background = glm::vec3(0.0f, 0.0f, 0.0f);
 
-				auto vase = std::make_shared<Mesh>(Vec3(0.0, 0.0, 0.0), "assets/models/brass_vase/brass_vase_04_4k.gltf");
+				auto vase = std::make_shared<Mesh>(glm::vec3(0.0f, 0.0f, 0.0f), "assets/models/brass_vase/brass_vase_04_4k.gltf");
 				world.add(vase);
 
-				auto greenMat = std::make_shared<Lambertian>(Vec3(0.0, 1.0, 0.0));
-				auto redMat = std::make_shared<Lambertian>(Vec3(1.0, 0.0, 0.0));
-				auto blueMat = std::make_shared<Lambertian>(Vec3(0.0, 0.0, 1.0));
-				auto groundMaterial = std::make_shared<Lambertian>(Vec3(0.5, 0.5, 0.5));
-				auto lightMat = std::make_shared<DiffuseLight>(Vec3(1.0, 1.0, 1.0));
-				world.add(std::make_shared<Sphere>(Vec3(1.1, 0.0, 0.0), 1.0, greenMat));
-				world.add(std::make_shared<Sphere>(Vec3(-1.1, 0.0, 0.0), 1.0, redMat));
-				world.add(std::make_shared<Sphere>(Vec3(0.0, 0.0, 1.1), 1.0, blueMat));
-				world.add(std::make_shared<Sphere>(Vec3(0.0, 1.3, 0.0), 1.0, lightMat));
-				world.add(std::make_shared<Sphere>(Vec3(0.0, -1000.0, 0.0), 1000.0, groundMaterial));
+				auto greenMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 1.0f, 0.0f));
+				auto redMat = std::make_shared<Lambertian>(glm::vec3(1.0f, 0.0f, 0.0f));
+				auto blueMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 0.0f, 1.0f));
+				auto groundMaterial = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
+				auto lightMat = std::make_shared<DiffuseLight>(glm::vec3(1.0f, 1.0f, 1.0f));
+				world.add(std::make_shared<Sphere>(glm::vec3(1.1f, 0.0f, 0.0f), 1.0f, greenMat));
+				world.add(std::make_shared<Sphere>(glm::vec3(-1.1f, 0.0f, 0.0f), 1.0f, redMat));
+				world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, 1.1f), 1.0f, blueMat));
+				world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 1.3f, 0.0f), 1.0f, lightMat));
+				world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMaterial));
 
 				//Camera
-				//Vec3 lookfrom = { 278.0, 278.0, -800.0 };
-				Vec3 lookfrom = { 0.0, 0.1, -0.5 };
-				Vec3 lookat = { 0.0, 0.1, 0.0 };
-				Vec3 vup = { 0.0, 1.0, 0.0 };
-				double distToFocus = 10.0;
-				double aperture = 0.0;
-				Camera cam(lookfrom, lookat, vup, 40.0, aspectRatio, aperture, distToFocus);
+				//glm::vec3 lookfrom = { 278f.0, 278f.0, -800f.0 };
+				glm::vec3 lookfrom = { 0.0f, 0.1f, -0.5f };
+				glm::vec3 lookat = { 0.0f, 0.1f, 0.0f };
+				glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
+				float distToFocus = 10.0f;
+				float aperture = 0.0f;
+				Camera cam(lookfrom, lookat, vup, 40.0f, aspectRatio, aperture, distToFocus);
+
+				float startTime = glfwGetTime();
 
 				//Render
 				if (useMultithreading)
@@ -246,7 +248,9 @@ void RaytracingApplication::runRaytracer()
 
 				raytracerPtr->Run();
 
+				float endTime = glfwGetTime();
 
+				std::cout << "Rendering took " << endTime - startTime << " seconds" << std::endl;
 				running = false;
 			});
 	}

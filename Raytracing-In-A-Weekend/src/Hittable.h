@@ -8,15 +8,15 @@ class Material;
 
 struct HitRecord
 {
-    Vec3 p;
-    Vec3 normal;
+    glm::vec3 p;
+    glm::vec3 normal;
     std::shared_ptr<Material> matPtr;
-	double t;
+	float t;
     bool frontFace;
-    double u;
-    double v;
+    float u;
+    float v;
 
-    inline void setFaceNormal(const Ray& r, const Vec3& outwardNormal)
+    inline void setFaceNormal(const Ray& r, const glm::vec3& outwardNormal)
     {
         frontFace = dot(r.direction, outwardNormal) < 0;
         normal = frontFace ? outwardNormal : -outwardNormal;
@@ -26,40 +26,40 @@ struct HitRecord
 class Hittable
 {
 public:
-	virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const = 0;
+	virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const = 0;
 };
 
 class Triangle : public Hittable
 {
 public:
     Triangle() {}
-    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, std::shared_ptr<Material> material, std::string&& dbgName) : v0(v0), v1(v1), v2(v2), t0(-1, -1, -1), t1(-1, -1, -1), t2(-1, -1, -1), matPtr(material), debugName(std::move(dbgName)) {}
-    Triangle(Vec3 v0, Vec3 v1, Vec3 v2, Vec3 t0, Vec3 t1, Vec3 t2, std::shared_ptr<Material> material, std::string&& dbgName)
+    Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> material, std::string&& dbgName) : v0(v0), v1(v1), v2(v2), t0(-1, -1, -1), t1(-1, -1, -1), t2(-1, -1, -1), matPtr(material), debugName(std::move(dbgName)) {}
+    Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 t0, glm::vec3 t1, glm::vec3 t2, std::shared_ptr<Material> material, std::string&& dbgName)
         : v0(v0), v1(v1), v2(v2), t0(t0), t1(t1), t2(t2), matPtr(material), debugName(std::move(dbgName)) {}
 
     virtual bool Hit(
-        const Ray& r, double tMin, double tMax, HitRecord& rec) const override
+        const Ray& r, float tMin, float tMax, HitRecord& rec) const override
     {
-        const double EPSILON = 1e-8;
-        Vec3 edge1, edge2, h, s, q;
-        double a, f, u, v;
+        const float EPSILON = 1e-8;
+        glm::vec3 edge1, edge2, h, s, q;
+        float a, f, u, v;
         edge1 = v1 - v0;
         edge2 = v2 - v0;
         h = cross(r.direction, edge2);
         a = dot(edge1, h);
         if (a > -EPSILON && a < EPSILON)
             return false;    // This ray is parallel to this triangle.
-        f = 1.0 / a;
+        f = 1.0f / a;
         s = r.origin - v0;
         u = f * dot(s, h);
-        if (u < 0.0 || u > 1.0)
+        if (u < 0.0f || u > 1.0f)
             return false;
         q = cross(s, edge1);
         v = f * dot(r.direction, q);
-        if (v < 0.0 || u + v > 1.0)
+        if (v < 0.0f || u + v > 1.0f)
             return false;
         // At this stage we can compute t to find out where the intersection point is on the line.
-        double t = f * dot(edge2, q);
+        float t = f * dot(edge2, q);
         if (t < tMin || tMax < t)
             return false; //Intersection is not closer than the closest so far
 
@@ -67,10 +67,10 @@ public:
         {
             rec.t = t;
             rec.p = r.At(rec.t);
-            rec.setFaceNormal(r, unitVector(cross(edge2, edge1)));
-            if(t0.x != -1.0)
+            rec.setFaceNormal(r, glm::normalize(cross(edge2, edge1)));
+            if(t0.x != -1.0f)
             {
-                Vec3 barycentricCoord = u * t0 + v * t1 + (1 - u - v) * t2;
+                glm::vec3 barycentricCoord = u * t0 + v * t1 + (1 - u - v) * t2;
                 rec.u = barycentricCoord.x;
                 rec.v = barycentricCoord.y;
             }
@@ -87,8 +87,8 @@ public:
     }
 
 public:
-    Vec3 v0, v1, v2; //Vertex positions
-    Vec3 t0, t1, t2; //Texture coordinates
+    glm::vec3 v0, v1, v2; //Vertex positions
+    glm::vec3 t0, t1, t2; //Texture coordinates
     std::shared_ptr<Material> matPtr;
     std::string debugName;
 };
@@ -97,22 +97,22 @@ class Sphere : public Hittable
 {
 public:
     Sphere() = default;
-    Sphere(Vec3 cen, double r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};
+    Sphere(glm::vec3 cen, float r, std::shared_ptr<Material> material) : center(cen), radius(r), matPtr(material) {};
 
     virtual bool Hit(
-        const Ray& r, double tMin, double tMax, HitRecord& rec) const override
+        const Ray& r, float tMin, float tMax, HitRecord& rec) const override
     {
-        Vec3 oc = r.origin - center;
-        double a = r.direction.length_squared();
-        double halfB = dot(oc, r.direction);
-        double c = oc.length_squared() - radius * radius;
+        glm::vec3 oc = r.origin - center;
+        float a = glm::dot(r.direction, r.direction);
+        float halfB = dot(oc, r.direction);
+        float c = glm::dot(oc, oc) - radius * radius;
 
-        double discriminant = halfB * halfB - a * c;
+        float discriminant = halfB * halfB - a * c;
         if (discriminant < 0) return false;
-        double sqrtd = sqrt(discriminant);
+        float sqrtd = sqrt(discriminant);
 
         // Find the nearest root that lies in the acceptable range.
-        double root = (-halfB - sqrtd) / a;
+        float root = (-halfB - sqrtd) / a;
         if (root < tMin || tMax < root) {
             root = (-halfB + sqrtd) / a;
             if (root < tMin || tMax < root)
@@ -121,7 +121,7 @@ public:
 
         rec.t = root;
         rec.p = r.At(rec.t);
-        Vec3 outwardNormal = (rec.p - center) / radius;
+        glm::vec3 outwardNormal = (rec.p - center) / radius;
         rec.setFaceNormal(r, outwardNormal);
         rec.matPtr = matPtr;
 
@@ -129,8 +129,8 @@ public:
     }
 
 public:
-    Vec3 center;
-    double radius;
+    glm::vec3 center;
+    float radius;
     std::shared_ptr<Material> matPtr;
 };
 
@@ -143,7 +143,7 @@ public:
     void clear() { objects.clear(); }
     void add(std::shared_ptr<Hittable> object) { objects.push_back(object); }
 
-    virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const override
+    virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override
     {
         HitRecord tempRec;
         bool hitAnything = false;
@@ -167,9 +167,9 @@ class AABB
 {
 public:
     AABB() = default;
-    AABB(const Vec3& a, const Vec3& b) : minimum(a), maximum(b) {}
+    AABB(const glm::vec3& a, const glm::vec3& b) : minimum(a), maximum(b) {}
 
-    bool Hit(const Ray& r, double tMin, double tMax) const
+    bool Hit(const Ray& r, float tMin, float tMax) const
     {
         for (int a = 0; a < 3; a++) {
             auto invD = 1.0f / r.direction[a];
@@ -186,5 +186,5 @@ public:
     }
 
 public:
-    Vec3 minimum, maximum;
+    glm::vec3 minimum, maximum;
 };

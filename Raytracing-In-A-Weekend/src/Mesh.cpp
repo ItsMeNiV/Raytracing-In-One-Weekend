@@ -1,8 +1,9 @@
+#include <iostream>
 #include "Mesh.h"
 #include "Texture.h"
 #include "Material.h"
 
-Mesh::Mesh(Vec3 pos, std::string const& location)
+Mesh::Mesh(glm::vec3 pos, std::string const& location)
     : position(pos), matPtr(nullptr), directory(location.substr(0, location.find_last_of('/')))
 {
     Assimp::Importer importer;
@@ -11,17 +12,17 @@ Mesh::Mesh(Vec3 pos, std::string const& location)
 
     if (scene)
     {
-        double xMin = infinity;
-        double yMin = infinity;
-        double zMin = infinity;
-        double xMax = 1e-8;
-        double yMax = 1e-8;
-        double zMax = 1e-8;
+        float xMin = infinity;
+        float yMin = infinity;
+        float zMin = infinity;
+        float xMax = 1e-8;
+        float yMax = 1e-8;
+        float zMax = 1e-8;
 
         processNode(scene->mRootNode, scene, xMin, yMin, zMin, xMax, yMax, zMax);
 
-        Vec3 minimum = Vec3(xMin, yMin, zMin);
-        Vec3 maximum = Vec3(xMax, yMax, zMax);
+        glm::vec3 minimum = glm::vec3(xMin, yMin, zMin);
+        glm::vec3 maximum = glm::vec3(xMax, yMax, zMax);
         boundingBox = std::make_shared<AABB>(minimum, maximum);
     }
     else
@@ -30,7 +31,7 @@ Mesh::Mesh(Vec3 pos, std::string const& location)
     }
 }
 
-void Mesh::processNode(aiNode* node, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax)
+void Mesh::processNode(aiNode* node, const aiScene* scene, float& xMin, float& yMin, float& zMin, float& xMax, float& yMax, float& zMax)
 {
     
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
@@ -45,7 +46,7 @@ void Mesh::processNode(aiNode* node, const aiScene* scene, double& xMin, double&
     }
 }
 
-void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax)
+void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& yMin, float& zMin, float& xMax, float& yMax, float& zMax)
 {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
     std::shared_ptr<Texture> diffuseTexture = nullptr;
@@ -103,13 +104,13 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double&
         unsigned int v0 = face.mIndices[0];
         unsigned int v1 = face.mIndices[1];
         unsigned int v2 = face.mIndices[2];
-        Vec3 pos0(position.x + mesh->mVertices[v0].x, position.y + mesh->mVertices[v0].y, position.z + mesh->mVertices[v0].z);
-        Vec3 pos1(position.x + mesh->mVertices[v1].x, position.y + mesh->mVertices[v1].y, position.z + mesh->mVertices[v1].z);
-        Vec3 pos2(position.x + mesh->mVertices[v2].x, position.y + mesh->mVertices[v2].y, position.z + mesh->mVertices[v2].z);
+        glm::vec3 pos0(position.x + mesh->mVertices[v0].x, position.y + mesh->mVertices[v0].y, position.z + mesh->mVertices[v0].z);
+        glm::vec3 pos1(position.x + mesh->mVertices[v1].x, position.y + mesh->mVertices[v1].y, position.z + mesh->mVertices[v1].z);
+        glm::vec3 pos2(position.x + mesh->mVertices[v2].x, position.y + mesh->mVertices[v2].y, position.z + mesh->mVertices[v2].z);
 
-        Vec3 tex0(0.0, 0.0, 0.0);
-        Vec3 tex1(0.1, 0.0, 0.0);
-        Vec3 tex2(0.5, 1.0, 0.0);
+        glm::vec3 tex0(0.0f, 0.0f, 0.0f);
+        glm::vec3 tex1(0.1f, 0.0f, 0.0f);
+        glm::vec3 tex2(0.5f, 1.0f, 0.0f);
         if (mesh->mTextureCoords[0])
         {
             tex0.x = mesh->mTextureCoords[0][v0].x;

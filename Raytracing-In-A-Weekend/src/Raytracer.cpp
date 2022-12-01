@@ -1,38 +1,38 @@
 ﻿#include "Raytracer.h"
 
-Vec3 Raytracer::rayColor(const Ray& r, int depth)
+glm::vec3 Raytracer::rayColor(const Ray& r, int depth)
 {
 	HitRecord rec;
 
 	if (depth <= 0)
-		return Vec3(0.0, 0.0, 0.0);
+		return glm::vec3(0.0f, 0.0f, 0.0f);
 
-	if (!mWorld.Hit(r, 0.001, infinity, rec))
+	if (!mWorld.Hit(r, 0.001f, infinity, rec))
 		return mBackground;
 
 	Ray scattered;
-	Vec3 attenuation;
-	Vec3 emitted = rec.matPtr->emitted(0.0, 0.0, rec.p);
+	glm::vec3 attenuation;
+	glm::vec3 emitted = rec.matPtr->emitted(0.0f, 0.0f, rec.p);
 	if (!rec.matPtr->scatter(r, rec, attenuation, scattered))
 		return emitted;
 
 	return emitted + attenuation * rayColor(scattered, depth - 1);
 }
 
-void Raytracer::writeColor(Vec3 pixelColor, int samplesPerPixel, int lineNumber, int columnNumber)
+void Raytracer::writeColor(glm::vec3 pixelColor, int samplesPerPixel, int lineNumber, int columnNumber)
 {
 	auto r = pixelColor.x;
 	auto g = pixelColor.y;
 	auto b = pixelColor.z;
 
-	auto scale = 1.0 / samplesPerPixel;
+	auto scale = 1.0f / samplesPerPixel;
 	r = sqrt(scale * r);
 	g = sqrt(scale * g);
 	b = sqrt(scale * b);
 
-	int rValue = static_cast<int>(255.999 * clamp(r, 0.0, 0.999));
-	int gValue = static_cast<int>(255.999 * clamp(g, 0.0, 0.999));
-	int bValue = static_cast<int>(255.999 * clamp(b, 0.0, 0.999));
+	int rValue = static_cast<int>(255.999f * clamp(r, 0.0f, 0.999f));
+	int gValue = static_cast<int>(255.999f * clamp(g, 0.0f, 0.999f));
+	int bValue = static_cast<int>(255.999f * clamp(b, 0.0f, 0.999f));
 
 	uint32_t index = (lineNumber * mImageWidth + columnNumber) * 4;
 	(*mImageTextureData)[index] = (GLubyte)rValue;
@@ -51,11 +51,11 @@ void RaytracerNormal::Run()
 		std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
 		for (int i = 0; i < mImageWidth; ++i)
 		{
-			Vec3 pixelColor(0.0, 0.0, 0.0);
+			glm::vec3 pixelColor(0.0f, 0.0f, 0.0f);
 			for (int s = 0; s < mSamplesPerPixel; ++s)
 			{
-				double u = (i + randomdouble()) / (mImageWidth - 1);
-				double v = (j + randomdouble()) / (mImageHeight - 1);
+				float u = (i + randomfloat()) / (mImageWidth - 1);
+				float v = (j + randomfloat()) / (mImageHeight - 1);
 				Ray r = mCamera.GetRay(u, v);
 				pixelColor += rayColor(r, mMaxDepth);
 			}
@@ -71,11 +71,11 @@ void RaytracerMT::writeLine(int lineNumber)
 	std::string lineString;
 	for (int i = 0; i < mImageWidth; ++i)
 	{
-		Vec3 pixelColor(0.0, 0.0, 0.0);
+		glm::vec3 pixelColor(0.0f, 0.0f, 0.0f);
 		for (int s = 0; s < mSamplesPerPixel; ++s)
 		{
-			double u = (i + randomdouble()) / (mImageWidth - 1);
-			double v = (lineNumber + randomdouble()) / (mImageHeight - 1);
+			float u = (i + randomfloat()) / (mImageWidth - 1);
+			float v = (lineNumber + randomfloat()) / (mImageHeight - 1);
 			Ray r = mCamera.GetRay(u, v);
 			pixelColor += rayColor(r, mMaxDepth);
 		}
@@ -119,47 +119,47 @@ void RaytracerMT::Run()
 HittableList randomScene() {
 	HittableList world;
 
-	auto groundMaterial = std::make_shared<Lambertian>(Vec3(0.5, 0.5, 0.5));
-	world.add(std::make_shared<Sphere>(Vec3(0.0, -1000.0, 0.0), 1000.0, groundMaterial));
+	auto groundMaterial = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
+	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMaterial));
 
 	for (int a = -11; a < 11; a++) {
 		for (int b = -11; b < 11; b++) {
-			auto chooseMat = randomdouble();
-			Vec3 center(a + 0.9 * randomdouble(), 0.2, b + 0.9 * randomdouble());
+			auto chooseMat = randomfloat();
+			glm::vec3 center(a + 0.9f * randomfloat(), 0.2f, b + 0.9f * randomfloat());
 
-			if ((center - Vec3(4.0, 0.2, 0.0)).length() > 0.9) {
+			if ((center - glm::vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f) {
 				std::shared_ptr<Material> sphereMaterial;
 
-				if (chooseMat < 0.8) {
+				if (chooseMat < 0.8f) {
 					// diffuse
 					auto albedo = randomVec() * randomVec();
 					sphereMaterial = std::make_shared<Lambertian>(albedo);
-					world.add(std::make_shared<Sphere>(center, 0.2, sphereMaterial));
+					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
 				}
-				else if (chooseMat < 0.95) {
+				else if (chooseMat < 0.95f) {
 					// metal
-					auto albedo = randomVec(0.5, 1.0);
-					auto fuzz = randomdouble(0.0, 0.5);
+					auto albedo = randomVec(0.5f, 1.0f);
+					auto fuzz = randomfloat(0.0f, 0.5f);
 					sphereMaterial = std::make_shared<Metal>(albedo, fuzz);
-					world.add(std::make_shared<Sphere>(center, 0.2, sphereMaterial));
+					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
 				}
 				else {
 					// glass
-					sphereMaterial = std::make_shared<Dielectric>(1.5);
-					world.add(std::make_shared<Sphere>(center, 0.2, sphereMaterial));
+					sphereMaterial = std::make_shared<Dielectric>(1.5f);
+					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
 				}
 			}
 		}
 	}
 
-	auto material1 = std::make_shared<Dielectric>(1.5);
-	world.add(make_shared<Sphere>(Vec3(0.0, 1.0, 0.0), 1.0, material1));
+	auto material1 = std::make_shared<Dielectric>(1.5f);
+	world.add(make_shared<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, material1));
 
-	auto material2 = std::make_shared<Lambertian>(Vec3(0.4, 0.2, 0.1));
-	world.add(std::make_shared<Sphere>(Vec3(-4.0, 1.0, 0.0), 1.0, material2));
+	auto material2 = std::make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f));
+	world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f, material2));
 
-	auto material3 = std::make_shared<Metal>(Vec3(0.7, 0.6, 0.5), 0.0);
-	world.add(std::make_shared<Sphere>(Vec3(4.0, 1.0, 0.0), 1.0, material3));
+	auto material3 = std::make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f);
+	world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, material3));
 
 	return world;
 }
@@ -168,28 +168,28 @@ HittableList cornellBox()
 {
 	HittableList objects;
 
-	auto red = std::make_shared<Lambertian>(Vec3(0.65, 0.05, 0.05));
-	auto white = std::make_shared<Lambertian>(Vec3(0.73, 0.73, 0.73));
-	auto green = std::make_shared<Lambertian>(Vec3(0.12, 0.45, 0.15));
-	auto light = std::make_shared<DiffuseLight>(Vec3(15, 15, 15));
+	auto red = std::make_shared<Lambertian>(glm::vec3(0.65f, 0.05f, 0.05f));
+	auto white = std::make_shared<Lambertian>(glm::vec3(0.73f, 0.73f, 0.73f));
+	auto green = std::make_shared<Lambertian>(glm::vec3(0.12f, 0.45f, 0.15f));
+	auto light = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
 
-	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 0.0), Vec3(555.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), green, ""));
-	objects.add(make_shared<Triangle>(Vec3(555.0, 0.0, 0.0), Vec3(555.0, 555.0, 555.0), Vec3(555.0, 0.0, 555.0), green, "")); //Left
+	objects.add(make_shared<Triangle>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), green, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(555.0f, 0.0f, 555.0f), green, "")); //Left
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 555.0, 0.0), Vec3(0.0, 555.0, 555.0), red, ""));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 555.0, 555.0), Vec3(0.0, 0.0, 555.0), red, "")); //Right
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(0.0f, 555.0f, 555.0f), red, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 555.0f), glm::vec3(0.0f, 0.0f, 555.0f), red, "")); //Right
 
-	objects.add(make_shared<Triangle>(Vec3(213.0, 554.0, 227.0), Vec3(343.0, 554.0, 227.0), Vec3(343.0, 554.0, 332.0), light, ""));
-	objects.add(make_shared<Triangle>(Vec3(213.0, 554.0, 227.0), Vec3(343.0, 554.0, 332.0), Vec3(213.0, 554.0, 332.0), light, "")); //Light
+	objects.add(make_shared<Triangle>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 332.0f), light, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 332.0f), glm::vec3(213.0f, 554.0f, 332.0f), light, "")); //Light
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(555.0, 0.0, 0.0), Vec3(555.0, 0.0, 555.0), white, ""));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 0.0), Vec3(555.0, 0.0, 555.0), Vec3(0.0, 0.0, 555.0), white, "")); //Floor
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 555.0f), white, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(0.0f, 0.0f, 555.0f), white, "")); //Floor
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 555.0, 0.0), Vec3(555.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), white, ""));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 555.0, 0.0), Vec3(555.0, 555.0, 555.0), Vec3(0.0, 555.0, 555.0), white, "")); //Top
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), white, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(0.0f, 555.0f, 555.0f), white, "")); //Top
 
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 555.0), Vec3(555.0, 0.0, 555.0), Vec3(555.0, 555.0, 555.0), white, "back"));
-	objects.add(make_shared<Triangle>(Vec3(0.0, 0.0, 555.0), Vec3(555.0, 555.0, 555.0), Vec3(0.0, 555.0, 555.0), white, "back")); //Back
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(555.0f, 555.0f, 555.0f), white, "back"));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(0.0f, 555.0f, 555.0f), white, "back")); //Back
 
 	return objects;
 }

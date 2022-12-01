@@ -17,7 +17,7 @@
 class Raytracer
 {
 public:
-	Raytracer(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const Vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
+	Raytracer(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const glm::vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
 		: mImageTextureData(imageTextureData), mCamera(camera), mWorld(world), mBackground(background), mImageHeight(imageHeight), mImageWidth(imageWidth), mSamplesPerPixel(samplesPerPixel), mMaxDepth(maxDepth)
 	{}
 	
@@ -28,19 +28,19 @@ protected:
 	std::shared_ptr<std::vector<GLubyte>> mImageTextureData;
 	Camera& mCamera;
 	HittableList& mWorld;
-	Vec3 mBackground;
+	glm::vec3 mBackground;
 	int mImageHeight, mImageWidth, mSamplesPerPixel, mMaxDepth;
 
-	Vec3 rayColor(const Ray& r, int depth);
+	glm::vec3 rayColor(const Ray& r, int depth);
 
-	void writeColor(Vec3 pixelColor, int samplesPerPixel, int lineNumber, int columnNumber);
+	void writeColor(glm::vec3 pixelColor, int samplesPerPixel, int lineNumber, int columnNumber);
 
 };
 
 class RaytracerNormal : public Raytracer
 {
 public:
-	RaytracerNormal(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const Vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
+	RaytracerNormal(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const glm::vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
 		: Raytracer(imageTextureData, camera, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth), cancelRaytracer(false) {}
 
 	virtual void Run() override;
@@ -58,7 +58,7 @@ class RaytracerMT : public Raytracer
 {
 public:
 	~RaytracerMT() = default;
-	RaytracerMT(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const Vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
+	RaytracerMT(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const glm::vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth)
 		: Raytracer(imageTextureData, camera, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth), mCurrentLineNumber(0), cancelThreads(false) {}
 
 	virtual void Run() override;
@@ -81,7 +81,7 @@ private:
 class GPURaytracer : public Raytracer
 {
 public:
-	GPURaytracer(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const Vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth, const int originalScreenWidth, const int originalScreenHeight);
+	GPURaytracer(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const glm::vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth, const int originalScreenWidth, const int originalScreenHeight);
 	~GPURaytracer() = default;
 
 	virtual void Run() override;

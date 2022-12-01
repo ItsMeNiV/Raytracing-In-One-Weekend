@@ -12,56 +12,56 @@ using std::sqrt;
 
 // Constants
 
-const double infinity = std::numeric_limits<double>::infinity();
-const double pi = 3.1415926535897932385;
+const float infinity = std::numeric_limits<float>::infinity();
+const float pi = 3.1415926535897932385;
 
 // Common Headers
-#include "Vec3.h"
+#include "glm/glm.hpp"
 #include "Ray.h"
 
-inline double degreesToRadians(double degrees) {
-	return degrees * pi / 180.0;
+inline float degreesToRadians(float degrees) {
+	return degrees * pi / 180.0f;
 }
 
-inline double randomdouble()
+inline float randomfloat()
 {
-	static std::uniform_real_distribution<double> distribution(0.0, 1.0);
+	static std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
 	static std::mt19937 generator;
 	return distribution(generator);
 }
 
-inline double randomdouble(double min, double max)
+inline float randomfloat(float min, float max)
 {
-	return min + (max - min) * randomdouble();
+	return min + (max - min) * randomfloat();
 }
 
-inline double clamp(double x, double min, double max)
+inline float clamp(float x, float min, float max)
 {
 	if (x < min) return min;
 	if (x > max) return max;
 	return x;
 }
 
-inline Vec3 randomVec()
+inline glm::vec3 randomVec()
 {
-	return Vec3(randomdouble(), randomdouble(), randomdouble());
+	return glm::vec3(randomfloat(), randomfloat(), randomfloat());
 }
 
-inline Vec3 randomVec(double min, double max)
+inline glm::vec3 randomVec(float min, float max)
 {
-	return Vec3(randomdouble(min, max), randomdouble(min, max), randomdouble(min, max));
+	return glm::vec3(randomfloat(min, max), randomfloat(min, max), randomfloat(min, max));
 }
 
-Vec3 randomVecInUnitSphere();
+glm::vec3 randomVecInUnitSphere();
 
-Vec3 randomUnitVector();
+glm::vec3 randomUnitVector();
 
-Vec3 randomInHemisphere(const Vec3& normal);
+glm::vec3 randomInHemisphere(const glm::vec3& normal);
 
-Vec3 randomInUnitDisk();
+glm::vec3 randomInUnitDisk();
 
-bool vecNearZero(const Vec3& vec);
+bool vecNearZero(const glm::vec3& vec);
 
-Vec3 refract(const Vec3& uv, const Vec3& n, double etaiOverEtat);
+glm::vec3 refract(const glm::vec3& uv, const glm::vec3& n, float etaiOverEtat);
 
 #endif

@@ -1,51 +1,51 @@
 #include "RTWeekend.h"
 
-Vec3 randomVecInUnitSphere()
+glm::vec3 randomVecInUnitSphere()
 {
 	while (true)
 	{
-		Vec3 p = randomVec(-1.0, 1.0);
-		if (dot(p, p) >= 1.0)
+		glm::vec3 p = randomVec(-1.0f, 1.0f);
+		if (dot(p, p) >= 1.0f)
 			continue;
 		return p;
 	}
 }
 
-Vec3 randomUnitVector()
+glm::vec3 randomUnitVector()
 {
-	Vec3 vec = randomVecInUnitSphere();
-	return unitVector(vec);
+	glm::vec3 vec = randomVecInUnitSphere();
+	return glm::normalize(vec);
 }
 
-Vec3 randomInHemisphere(const Vec3& normal)
+glm::vec3 randomInHemisphere(const glm::vec3& normal)
 {
-	Vec3 inUnitSphere = randomVecInUnitSphere();
-	if (dot(inUnitSphere, normal) > 0.0)
+	glm::vec3 inUnitSphere = randomVecInUnitSphere();
+	if (dot(inUnitSphere, normal) > 0.0f)
 		return inUnitSphere;
 	else
 		return -inUnitSphere;
 }
 
-Vec3 randomInUnitDisk()
+glm::vec3 randomInUnitDisk()
 {
 	while (true)
 	{
-		Vec3 p = Vec3(randomdouble(-1.0, 1.0), randomdouble(-1.0, 1.0), 0.0);
-		if (p.length_squared() >= 1) continue;
+		glm::vec3 p = glm::vec3(randomfloat(-1.0f, 1.0f), randomfloat(-1.0f, 1.0f), 0.0f);
+		if (glm::dot(p, p) >= 1) continue;
 		return p;
 	}
 }
 
-bool vecNearZero(const Vec3& vec)
+bool vecNearZero(const glm::vec3& vec)
 {
 	const auto s = 1e-8;
 	return (fabs(vec.x) < s) && (fabs(vec.y) < s) && (fabs(vec.z) < s);
 }
 
-Vec3 refract(const Vec3& uv, const Vec3& n, double etaiOverEtat)
+glm::vec3 refract(const glm::vec3& uv, const glm::vec3& n, float etaiOverEtat)
 {
-	double cosTheta = fmin(dot(-uv, n), 1.0);
-	Vec3 rOutPerp = etaiOverEtat * (uv + cosTheta * n);
-	Vec3 rOutParallel = -sqrt(fabs(1.0 - rOutPerp.length_squared())) * n;
+	float cosTheta = fmin(dot(-uv, n), 1.0f);
+	glm::vec3 rOutPerp = etaiOverEtat * (uv + cosTheta * n);
+	glm::vec3 rOutParallel = -sqrt(fabs(1.0f - glm::dot(rOutPerp, rOutPerp))) * n;
 	return rOutPerp + rOutParallel;
 }

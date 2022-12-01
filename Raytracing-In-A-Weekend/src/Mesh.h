@@ -8,9 +8,9 @@
 class Mesh : public Hittable
 {
 public:
-	Mesh(Vec3 pos, std::string const& location);
+	Mesh(glm::vec3 pos, std::string const& location);
 
-    virtual bool Hit(const Ray& r, double tMin, double tMax, HitRecord& rec) const override
+    virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override
     {
         if (!boundingBox->Hit(r, tMin, tMax))
             return false;
@@ -32,13 +32,13 @@ public:
 
 private:
     std::shared_ptr<AABB> boundingBox;
-	Vec3 position;
+	glm::vec3 position;
 	std::vector<Triangle> triangles;
     std::shared_ptr<Material> matPtr;
     std::string directory;
     std::vector<std::string> loadedTextures;
 
-    void processNode(aiNode* node, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax);
-    void processMesh(aiMesh* mesh, const aiScene* scene, double& xMin, double& yMin, double& zMin, double& xMax, double& yMax, double& zMax);
+    void processNode(aiNode* node, const aiScene* scene, float& xMin, float& yMin, float& zMin, float& xMax, float& yMax, float& zMax);
+    void processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& yMin, float& zMin, float& xMax, float& yMax, float& zMax);
 
 };

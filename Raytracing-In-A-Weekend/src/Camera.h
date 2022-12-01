@@ -3,37 +3,37 @@
 class Camera
 {
 public:
-	Camera(Vec3 lookfrom, Vec3 lookat, Vec3 vup, double vfov, double aspectRatio, double aperture, double focusDist)
+	Camera(glm::vec3 lookfrom, glm::vec3 lookat, glm::vec3 vup, float vfov, float aspectRatio, float aperture, float focusDist)
 	{
-		auto theta = degreesToRadians(vfov);
-		auto h = tan(theta / 2.0);
-		auto viewportHeight = 2.0 * h;
-		auto viewportWidth = aspectRatio * viewportHeight;
-		auto focalLength = 1.0;
+		float theta = glm::radians(vfov);
+		float h = glm::tan(theta / 2.0f);
+		float viewportHeight = 2.0f * h;
+		float viewportWidth = aspectRatio * viewportHeight;
+		float focalLength = 1.0f;
 
-		w = unitVector(lookfrom - lookat);
-		u = unitVector(cross(vup, w));
-		v = cross(w, u);
+		w = glm::normalize(lookfrom - lookat);
+		u = glm::normalize(glm::cross(vup, w));
+		v = glm::cross(w, u);
 
 		origin = lookfrom;
 		horizontal = focusDist * viewportWidth * u;
 		vertical = focusDist * viewportHeight * v;
-		lowerLeftCorner = origin - horizontal / 2.0 - vertical / 2.0 - focusDist * w;
+		lowerLeftCorner = origin - horizontal / 2.0f - vertical / 2.0f - focusDist * w;
 
 		lensRadius = aperture / 2;
 	}
 
-	Ray GetRay(double s, double t) const
+	Ray GetRay(float s, float t) const
 	{
-		Vec3 rd = lensRadius * randomInUnitDisk();
-		Vec3 offset = u * rd.x + v * rd.y;
+		glm::vec3 rd = lensRadius * randomInUnitDisk();
+		glm::vec3 offset = u * rd.x + v * rd.y;
 
 		return Ray(origin + offset, lowerLeftCorner + s * horizontal + t * vertical - origin - offset);
 	}
 
 private:
-	Vec3 origin, lowerLeftCorner, horizontal, vertical;
-	Vec3 u, v, w;
-	double lensRadius;
+	glm::vec3 origin, lowerLeftCorner, horizontal, vertical;
+	glm::vec3 u, v, w;
+	float lensRadius;
 
 };

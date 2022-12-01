@@ -12,7 +12,7 @@ public:
 		if (data)
 		{
 			unsigned int dataSize = textureWidth * textureHeight;
-			textureData = new Vec3[dataSize];
+			textureData = new glm::vec3[dataSize];
 			unsigned int j = 0;
 			for (unsigned int i = 0; i < dataSize; i++)
 			{
@@ -34,15 +34,15 @@ public:
 			delete[] textureData;
 	}
 
-	Vec3& At(double uCoord, double vCoord)
+	glm::vec3& At(float uCoord, float vCoord)
 	{
-		int texelX = (uCoord * textureWidth) - 0.5;
-		int texelY = ((1-vCoord) * textureHeight) - 0.5;
+		int texelX = (uCoord * textureWidth) - 0.5f;
+		int texelY = ((1-vCoord) * textureHeight) - 0.5f;
 
 		return textureData[texelY * textureHeight + texelX];
 	}
 
 private:
-	Vec3* textureData;
+	glm::vec3* textureData;
 	int textureWidth, textureHeight;
 };
