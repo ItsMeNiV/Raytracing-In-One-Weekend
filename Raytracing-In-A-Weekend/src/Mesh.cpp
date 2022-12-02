@@ -137,12 +137,13 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
             norm2 = glm::normalize(glm::vec3(mesh->mNormals[v2].x, mesh->mNormals[v2].y, mesh->mNormals[v2].z));
         }
 
+        glm::mat3 normalMatrix(glm::transpose(glm::inverse(modelMatrix)));
         pos0 = glm::vec3(modelMatrix * glm::vec4(pos0, 0.0f));
         pos1 = glm::vec3(modelMatrix * glm::vec4(pos1, 0.0f));
         pos2 = glm::vec3(modelMatrix * glm::vec4(pos2, 0.0f));
-        norm0 = glm::vec3(glm::vec4(norm0, 0.0f));
-        norm1 = glm::vec3(glm::vec4(norm1, 0.0f));
-        norm2 = glm::vec3(glm::vec4(norm2, 0.0f));
+        norm0 = glm::vec3(normalMatrix * glm::vec4(norm0, 0.0f));
+        norm1 = glm::vec3(normalMatrix * glm::vec4(norm1, 0.0f));
+        norm2 = glm::vec3(normalMatrix * glm::vec4(norm2, 0.0f));
         tangent0 = glm::vec3(modelMatrix * glm::vec4(tangent0, 0.0f));
         tangent1 = glm::vec3(modelMatrix * glm::vec4(tangent1, 0.0f));
         tangent2 = glm::vec3(modelMatrix * glm::vec4(tangent2, 0.0f));
