@@ -9,7 +9,7 @@ Mesh::Mesh(glm::mat4 model, std::string const& location)
 {
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile(location, aiProcess_Triangulate);
+    const aiScene* scene = importer.ReadFile(location, aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals);
 
     if (scene)
     {
@@ -108,6 +108,12 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
         glm::vec3 pos0(mesh->mVertices[v0].x, mesh->mVertices[v0].y, mesh->mVertices[v0].z);
         glm::vec3 pos1(mesh->mVertices[v1].x, mesh->mVertices[v1].y, mesh->mVertices[v1].z);
         glm::vec3 pos2(mesh->mVertices[v2].x, mesh->mVertices[v2].y, mesh->mVertices[v2].z);
+        glm::vec3 tangent0(mesh->mTangents[v0].x, mesh->mTangents[v0].y, mesh->mTangents[v0].z);
+        glm::vec3 tangent1(mesh->mTangents[v1].x, mesh->mTangents[v1].y, mesh->mTangents[v1].z);
+        glm::vec3 tangent2(mesh->mTangents[v2].x, mesh->mTangents[v2].y, mesh->mTangents[v2].z);
+        glm::vec3 bitangent0(mesh->mBitangents[v0].x, mesh->mBitangents[v0].y, mesh->mBitangents[v0].z);
+        glm::vec3 bitangent1(mesh->mBitangents[v1].x, mesh->mBitangents[v1].y, mesh->mBitangents[v1].z);
+        glm::vec3 bitangent2(mesh->mBitangents[v2].x, mesh->mBitangents[v2].y, mesh->mBitangents[v2].z);
 
         glm::vec3 tex0(0.0f, 0.0f, 0.0f);
         glm::vec3 tex1(0.1f, 0.0f, 0.0f);
@@ -121,12 +127,34 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
             tex2.x = mesh->mTextureCoords[0][v2].x;
             tex2.y = mesh->mTextureCoords[0][v2].y;
         }
+        glm::vec3 norm0(0.0f, 0.0f, 0.0f);
+        glm::vec3 norm1(0.0f, 0.0f, 0.0f);
+        glm::vec3 norm2(0.0f, 0.0f, 0.0f);
+        if (mesh->HasNormals())
+        {
+            norm0 = glm::normalize(glm::vec3(mesh->mNormals[v0].x, mesh->mNormals[v0].y, mesh->mNormals[v0].z));
+            norm1 = glm::normalize(glm::vec3(mesh->mNormals[v1].x, mesh->mNormals[v1].y, mesh->mNormals[v1].z));
+            norm2 = glm::normalize(glm::vec3(mesh->mNormals[v2].x, mesh->mNormals[v2].y, mesh->mNormals[v2].z));
+        }
 
-        pos0 = glm::vec3(glm::vec4(pos0, 1.0f) * modelMatrix);
-        pos1 = glm::vec3(glm::vec4(pos1, 1.0f) * modelMatrix);
-        pos2 = glm::vec3(glm::vec4(pos2, 1.0f) * modelMatrix);
+        pos0 = glm::vec3(modelMatrix * glm::vec4(pos0, 0.0f));
+        pos1 = glm::vec3(modelMatrix * glm::vec4(pos1, 0.0f));
+        pos2 = glm::vec3(modelMatrix * glm::vec4(pos2, 0.0f));
+        norm0 = glm::vec3(glm::vec4(norm0, 0.0f));
+        norm1 = glm::vec3(glm::vec4(norm1, 0.0f));
+        norm2 = glm::vec3(glm::vec4(norm2, 0.0f));
+        tangent0 = glm::vec3(modelMatrix * glm::vec4(tangent0, 0.0f));
+        tangent1 = glm::vec3(modelMatrix * glm::vec4(tangent1, 0.0f));
+        tangent2 = glm::vec3(modelMatrix * glm::vec4(tangent2, 0.0f));
+        bitangent0 = glm::vec3(modelMatrix * glm::vec4(bitangent0, 0.0f));
+        bitangent1 = glm::vec3(modelMatrix * glm::vec4(bitangent1, 0.0f));
+        bitangent2 = glm::vec3(modelMatrix * glm::vec4(bitangent2, 0.0f));
 
-        Triangle tri(pos0, pos1, pos2, tex0, tex1, tex2, matPtr, "");
+        Vertex vert0(pos0, norm0, tex0, tangent0, bitangent0);
+        Vertex vert1(pos1, norm1, tex1, tangent1, bitangent1);
+        Vertex vert2(pos2, norm2, tex2, tangent2, bitangent2);
+
+        Triangle tri(vert0, vert1, vert2, modelMatrix, matPtr, "");
         triangles.push_back(tri);
 
         //MIN

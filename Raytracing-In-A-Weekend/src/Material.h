@@ -121,8 +121,23 @@ public:
     virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
     {
         //Override normal with normalmap if available
-        glm::vec3 normal = normalTexture ? glm::normalize(normalTexture->At(rec.u, rec.v) * 2.0f - 1.0f) : rec.normal;
-        normal = rec.normal; //Normal-Mapping doesn't work properly yet
+        glm::vec3 normal(0.0f, 0.0f, 0.0f);
+        glm::mat3 normalMatrix(glm::transpose(glm::inverse(rec.modelMatrix)));
+        if (normalTexture)
+        {
+            glm::vec3 T = glm::normalize(normalMatrix * rec.tangent);
+            glm::vec3 B = glm::normalize(normalMatrix * rec.bitangent);
+            glm::vec3 N = glm::normalize(normalMatrix * rec.normal);
+            glm::mat3 TBN(T, B, N);
+
+            normal = normalTexture->At(rec.u, rec.v) * 2.0f - 1.0f;
+            normal = glm::normalize(TBN * normal);
+        }
+        else
+        {
+            normal = normalMatrix * rec.normal;
+        }
+        normal = normalMatrix * rec.normal; //Normalmapping doesn't work properly yet
 
         attenuation = diffuseTexture->At(rec.u, rec.v);
 

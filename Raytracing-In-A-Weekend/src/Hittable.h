@@ -15,6 +15,9 @@ struct HitRecord
     bool frontFace;
     float u;
     float v;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
+    glm::mat4 modelMatrix;
 
     inline void setFaceNormal(const Ray& r, const glm::vec3& outwardNormal)
     {
@@ -29,13 +32,26 @@ public:
 	virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const = 0;
 };
 
+struct Vertex
+{
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec3 textureCoord;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
+};
+
 class Triangle : public Hittable
 {
 public:
     Triangle() {}
-    Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, std::shared_ptr<Material> material, std::string&& dbgName) : v0(v0), v1(v1), v2(v2), t0(-1, -1, -1), t1(-1, -1, -1), t2(-1, -1, -1), matPtr(material), debugName(std::move(dbgName)) {}
-    Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 t0, glm::vec3 t1, glm::vec3 t2, std::shared_ptr<Material> material, std::string&& dbgName)
-        : v0(v0), v1(v1), v2(v2), t0(t0), t1(t1), t2(t2), matPtr(material), debugName(std::move(dbgName)) {}
+    Triangle(Vertex vert0, Vertex vert1, Vertex vert2, glm::mat4 modelMatrix, std::shared_ptr<Material> material, std::string&& dbgName)
+        : modelMatrix(modelMatrix), matPtr(material), debugName(std::move(dbgName))
+    {
+        vertices[0] = vert0;
+        vertices[1] = vert1;
+        vertices[2] = vert2;
+    }
 
     virtual bool Hit(
         const Ray& r, float tMin, float tMax, HitRecord& rec) const override
@@ -43,14 +59,14 @@ public:
         const float EPSILON = 1e-8;
         glm::vec3 edge1, edge2, h, s, q;
         float a, f, u, v;
-        edge1 = v1 - v0;
-        edge2 = v2 - v0;
+        edge1 = vertices[1].position - vertices[0].position;
+        edge2 = vertices[2].position - vertices[0].position;
         h = cross(r.direction, edge2);
         a = dot(edge1, h);
         if (a > -EPSILON && a < EPSILON)
             return false;    // This ray is parallel to this triangle.
         f = 1.0f / a;
-        s = r.origin - v0;
+        s = r.origin - vertices[0].position;
         u = f * dot(s, h);
         if (u < 0.0f || u > 1.0f)
             return false;
@@ -67,10 +83,18 @@ public:
         {
             rec.t = t;
             rec.p = r.At(rec.t);
-            rec.setFaceNormal(r, glm::normalize(cross(edge2, edge1)));
-            if(t0.x != -1.0f)
+
+            if (vertices[0].normal.x == 0.0f && vertices[0].normal.y == 0.0f && vertices[0].normal.z == 0.0f)
             {
-                glm::vec3 barycentricCoord = u * t0 + v * t1 + (1 - u - v) * t2;
+                rec.setFaceNormal(r, glm::normalize(cross(edge2, edge1)));
+            }
+            else
+            {
+                rec.normal = glm::normalize(u * vertices[0].normal + v * vertices[1].normal + (1 - u - v) * vertices[2].normal);
+            }
+            if(vertices[0].textureCoord.x != -1.0f)
+            {
+                glm::vec3 barycentricCoord = u * vertices[0].textureCoord + v * vertices[1].textureCoord + (1 - u - v) * vertices[2].textureCoord;
                 rec.u = barycentricCoord.x;
                 rec.v = barycentricCoord.y;
             }
@@ -79,6 +103,34 @@ public:
                 rec.u = u;
                 rec.v = v;
             }
+            if(vertices[0].tangent.x != -1.0f)
+            {
+                glm::vec2 deltaUV1 = vertices[2].textureCoord - vertices[0].textureCoord;
+                glm::vec2 deltaUV2 = vertices[1].textureCoord - vertices[0].textureCoord;
+                float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+                glm::vec3 tangent(0.0f, 0.0f, 0.0f);
+                glm::vec3 bitangent(0.0f, 0.0f, 0.0f);
+
+                tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+                tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+                tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+                bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+                bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+                bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+                rec.tangent = tangent;
+                rec.bitangent = bitangent;
+
+                rec.tangent = u * vertices[0].tangent + v * vertices[1].tangent + (1 - u - v) * vertices[2].tangent;
+                rec.bitangent = u * vertices[0].bitangent + v * vertices[1].bitangent + (1 - u - v) * vertices[2].bitangent;
+            }
+            else
+            {
+                rec.tangent = vertices[0].tangent;
+                rec.bitangent = vertices[0].bitangent;
+            }
+            rec.modelMatrix = modelMatrix;
             rec.matPtr = matPtr;
             return true;
         }
@@ -87,8 +139,8 @@ public:
     }
 
 public:
-    glm::vec3 v0, v1, v2; //Vertex positions
-    glm::vec3 t0, t1, t2; //Texture coordinates
+    Vertex vertices[3];
+    glm::mat4 modelMatrix; //The model matrix of the mesh this triangle belongs to
     std::shared_ptr<Material> matPtr;
     std::string debugName;
 };
