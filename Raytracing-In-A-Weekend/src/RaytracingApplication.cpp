@@ -3,6 +3,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "Mesh.h"
+#include "Hittable.h"
 
 static int imageWidth = 1600;
 static int imageHeight = 900;
@@ -12,11 +13,12 @@ static int samplesPerPixel = 20;
 static int maxDepth = 50;
 static bool useMultithreading = true;
 static bool useGPUTracing = false;
+static bool useBuildUpRender = true;
 
 RaytracingApplication::RaytracingApplication()
 	: running(false), imageTexture(0),
 	window(glfwCreateWindow(1600, 900, "Raytracing in a Weekend impl. by Yannik Hodel", NULL, NULL)), screenWidth(1600), screenHeight(900),
-	imageTextureData(std::make_shared<std::vector<GLubyte>>())
+	imageTextureData(std::make_shared<std::vector<GLubyte>>()), renderTimeString("Time to render: 0.0s")
 {
 	imageTextureData->resize(imageWidth * imageHeight * 4);
 	glfwMakeContextCurrent(window);
@@ -99,7 +101,7 @@ void RaytracingApplication::Run()
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 		ImGui::Begin("Render settings", NULL, windowFlags);
-		ImGui::SetWindowSize({ 400.0f, 170.0f });
+		ImGui::SetWindowSize({ 400.0f, 195.0f });
 		ImGui::SetWindowPos({ 0.0f, 0.0f });
 
 		ImGui::BeginDisabled(running);
@@ -109,6 +111,7 @@ void RaytracingApplication::Run()
 		ImGui::InputInt("Max depth", &maxDepth);
 
 		ImGui::Checkbox("Use multithreading", &useMultithreading);
+		ImGui::Checkbox("Use build up render", &useBuildUpRender);
 
 		if (ImGui::Button("Render"))
 		{
@@ -132,6 +135,8 @@ void RaytracingApplication::Run()
 			if (raytracerThread && raytracerThread->joinable())
 				raytracerThread->join();
 		}
+		ImGui::SameLine();
+		ImGui::Text(renderTimeString.c_str());
 		ImGui::End();
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -240,18 +245,18 @@ void RaytracingApplication::runRaytracer()
 				//Render
 				if (useMultithreading)
 				{
-					raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+					raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth, useBuildUpRender);
 				}
 				else
 				{
-					raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth);
+					raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth, useBuildUpRender);
 				}
 
 				raytracerPtr->Run();
 
 				float endTime = glfwGetTime();
 
-				std::cout << "Rendering took " << endTime - startTime << " seconds" << std::endl;
+				renderTimeString = std::string("Time to render: " + std::to_string(endTime - startTime) + "s");
 				running = false;
 			});
 	}
@@ -264,4 +269,84 @@ int main()
 
 	RaytracingApplication app;
 	app.Run();
+}
+
+HittableList randomScene() {
+	HittableList world;
+
+	auto groundMaterial = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
+	world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMaterial));
+
+	for (int a = -11; a < 11; a++) {
+		for (int b = -11; b < 11; b++) {
+			auto chooseMat = randomfloat();
+			glm::vec3 center(a + 0.9f * randomfloat(), 0.2f, b + 0.9f * randomfloat());
+
+			if ((center - glm::vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f) {
+				std::shared_ptr<Material> sphereMaterial;
+
+				if (chooseMat < 0.8f) {
+					// diffuse
+					auto albedo = randomVec() * randomVec();
+					sphereMaterial = std::make_shared<Lambertian>(albedo);
+					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
+				}
+				else if (chooseMat < 0.95f) {
+					// metal
+					auto albedo = randomVec(0.5f, 1.0f);
+					auto fuzz = randomfloat(0.0f, 0.5f);
+					sphereMaterial = std::make_shared<Metal>(albedo, fuzz);
+					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
+				}
+				else {
+					// glass
+					sphereMaterial = std::make_shared<Dielectric>(1.5f);
+					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
+				}
+			}
+		}
+	}
+
+	auto material1 = std::make_shared<Dielectric>(1.5f);
+	world.add(make_shared<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, material1));
+
+	auto material2 = std::make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f));
+	world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f, material2));
+
+	auto material3 = std::make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f);
+	world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, material3));
+
+	return world;
+}
+
+HittableList cornellBox()
+{
+	HittableList objects;
+
+	auto red = std::make_shared<Lambertian>(glm::vec3(0.65f, 0.05f, 0.05f));
+	auto white = std::make_shared<Lambertian>(glm::vec3(0.73f, 0.73f, 0.73f));
+	auto green = std::make_shared<Lambertian>(glm::vec3(0.12f, 0.45f, 0.15f));
+	auto light = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
+
+	/*
+	objects.add(make_shared<Triangle>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), green, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(555.0f, 0.0f, 555.0f), green, "")); //Left
+
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(0.0f, 555.0f, 555.0f), red, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 555.0f), glm::vec3(0.0f, 0.0f, 555.0f), red, "")); //Right
+
+	objects.add(make_shared<Triangle>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 332.0f), light, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 332.0f), glm::vec3(213.0f, 554.0f, 332.0f), light, "")); //Light
+
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 555.0f), white, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(0.0f, 0.0f, 555.0f), white, "")); //Floor
+
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), white, ""));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(0.0f, 555.0f, 555.0f), white, "")); //Top
+
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(555.0f, 555.0f, 555.0f), white, "back"));
+	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(0.0f, 555.0f, 555.0f), white, "back")); //Back
+	*/
+
+	return objects;
 }

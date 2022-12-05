@@ -1,7 +1,7 @@
 #include "Raytracer.h"
 
 GPURaytracer::GPURaytracer(std::shared_ptr<std::vector<GLubyte>> imageTextureData, Camera& camera, HittableList& world, const glm::vec3& background, const int imageHeight, const int imageWidth, const int samplesPerPixel, const int maxDepth, const int originalScreenWidth, const int originalScreenHeight)
-    : Raytracer(imageTextureData, camera, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth),
+    : Raytracer(imageTextureData, camera, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth, false),
 	originalScreenWidth(originalScreenWidth), originalScreenHeight(originalScreenHeight)
 {
     raytraceShader = std::make_unique<Shader>("assets/shaders/maindisplay.vert", "assets/shaders/raytracer.frag");

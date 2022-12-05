@@ -30,7 +30,11 @@ private:
     uint32_t imageTexture;
     int32_t screenWidth, screenHeight;
     std::shared_ptr<std::vector<GLubyte>> imageTextureData;
+    std::string renderTimeString;
 
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
+
+HittableList randomScene();
+HittableList cornellBox();
