@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "RTWeekend.h"
+#include "AABB.h"
 
 class Material;
 
@@ -30,6 +31,7 @@ class Hittable
 {
 public:
 	virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const = 0;
+    virtual bool BoundingBox(AABB& outputBox) const = 0;
 };
 
 struct Vertex
@@ -138,6 +140,78 @@ public:
             return false;
     }
 
+    virtual bool BoundingBox(AABB& outputBox) const
+    {
+        float xMin = infinity;
+        float yMin = infinity;
+        float zMin = infinity;
+        float xMax = 1e-8;
+        float yMax = 1e-8;
+        float zMax = 1e-8;
+
+        if (vertices[0].position.x < xMin)
+            xMin = vertices[0].position.x;
+        if (vertices[1].position.x < xMin)
+            xMin = vertices[1].position.x;
+        if (vertices[2].position.x < xMin)
+            xMin = vertices[2].position.x;
+
+        if (vertices[0].position.y < yMin)
+            yMin = vertices[0].position.y;
+        if (vertices[1].position.y < yMin)
+            yMin = vertices[1].position.y;
+        if (vertices[2].position.y < yMin)
+            yMin = vertices[2].position.y;
+
+        if (vertices[0].position.z < zMin)
+            zMin = vertices[0].position.z;
+        if (vertices[1].position.z < zMin)
+            zMin = vertices[1].position.z;
+        if (vertices[2].position.z < zMin)
+            zMin = vertices[2].position.z;
+
+        //MAX
+        if (vertices[0].position.x > xMax)
+            xMax = vertices[0].position.x;
+        if (vertices[1].position.x > xMax)
+            xMax = vertices[1].position.x;
+        if (vertices[2].position.x > xMax)
+            xMax = vertices[2].position.x;
+
+        if (vertices[0].position.y > yMax)
+            yMax = vertices[0].position.y;
+        if (vertices[1].position.y > yMax)
+            yMax = vertices[1].position.y;
+        if (vertices[2].position.y > yMax)
+            yMax = vertices[2].position.y;
+
+        if (vertices[0].position.z > zMax)
+            zMax = vertices[0].position.z;
+        if (vertices[1].position.z > zMax)
+            zMax = vertices[1].position.z;
+        if (vertices[2].position.z > zMax)
+            zMax = vertices[2].position.z;
+
+        if (xMin == xMax)
+        {
+            xMin--;
+            xMax++;
+        }
+        if (yMin == yMax)
+        {
+            yMin--;
+            yMax++;
+        }
+        if (zMin == zMax)
+        {
+            zMin--;
+            zMax++;
+        }
+
+        outputBox = AABB({ xMin, yMin, zMin }, { xMax, yMax, zMax });
+        return true;
+    }
+
 public:
     Vertex vertices[3];
     glm::mat4 modelMatrix; //The model matrix of the mesh this triangle belongs to
@@ -180,6 +254,15 @@ public:
         return true;
     }
 
+    virtual bool BoundingBox(AABB& outputBox) const
+    {
+        outputBox = AABB(
+            center - glm::vec3(radius, radius, radius),
+            center + glm::vec3(radius, radius, radius)
+        );
+        return true;
+    }
+
 public:
     glm::vec3 center;
     float radius;
@@ -212,31 +295,108 @@ public:
         return hitAnything;
     }
 
+    virtual bool BoundingBox(AABB& outputBox) const
+    {
+        if (objects.empty()) return false;
+
+        AABB tempBox;
+        bool firstBox = true;
+
+        for (const auto& object : objects)
+        {
+            if (!object->BoundingBox(tempBox)) return false;
+            outputBox = firstBox ? tempBox : surroundingBox(outputBox, tempBox);
+            firstBox = false;
+        }
+
+        return true;
+    }
+
     std::vector<std::shared_ptr<Hittable>> objects;
 };
 
-class AABB
+class Box : public Hittable
 {
 public:
-    AABB() = default;
-    AABB(const glm::vec3& a, const glm::vec3& b) : minimum(a), maximum(b) {}
-
-    bool Hit(const Ray& r, float tMin, float tMax) const
+    Box() = default;
+    Box(const glm::vec3& p0, const glm::vec3 p1, std::shared_ptr<Material> matPtr, glm::mat4 modelMatrix)
+        : boxMin(p0), boxMax(p1)
     {
-        for (int a = 0; a < 3; a++) {
-            auto invD = 1.0f / r.direction[a];
-            auto t0 = (minimum[a] - r.origin[a]) * invD;
-            auto t1 = (maximum[a] - r.origin[a]) * invD;
-            if (invD < 0.0f)
-                std::swap(t0, t1);
-            tMin = t0 > tMin ? t0 : tMin;
-            tMax = t1 < tMax ? t1 : tMax;
-            if (tMax <= tMin)
-                return false;
-        }
+        Vertex vert0;
+        Vertex vert1;
+        Vertex vert2;
+        vert0.normal = { 0.0f, 0.0f, 0.0f };
+        vert1.normal = { 0.0f, 0.0f, 0.0f };
+        vert2.normal = { 0.0f, 0.0f, 0.0f };
+
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p0, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p0.y, p1.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p0.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, ""));
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p0.y, p1.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p1.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p0.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, "")); //Left
+
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p0.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p1.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p1.y, p0.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, ""));
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p1.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p1.y, p0.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, "")); //Right
+
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p0, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p0.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p0.y, p1.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, ""));
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p0.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p1.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p0.y, p1.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, "")); //Floor
+
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p0.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p1.y, p0.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p1.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, ""));
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p1.y, p0.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p1.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, "")); //Top
+
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p0, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p0.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p0.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, ""));
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p0.z, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p1.y, p0.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p0.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, "")); //Front
+
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p1.y, p1.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p0.y, p1.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, ""));
+        vert0.position = glm::vec3(modelMatrix * glm::vec4(p1, 1.0f));
+        vert1.position = glm::vec3(modelMatrix * glm::vec4(p0.x, p0.y, p1.z, 1.0f));
+        vert2.position = glm::vec3(modelMatrix * glm::vec4(p1.x, p0.y, p1.z, 1.0f));
+        sides.add(std::make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), matPtr, "")); //Back
+    }
+
+    virtual bool Hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override
+    {
+        return sides.Hit(r, tMin, tMax, rec);
+    }
+
+    virtual bool BoundingBox(AABB& outputBox) const
+    {
+        outputBox = AABB(boxMin, boxMax);
         return true;
     }
 
 public:
-    glm::vec3 minimum, maximum;
+    glm::vec3 boxMin;
+    glm::vec3 boxMax;
+    HittableList sides;
 };

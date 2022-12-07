@@ -4,6 +4,9 @@
 #include "imgui_impl_opengl3.h"
 #include "Mesh.h"
 #include "Hittable.h"
+#include "Bvh.h"
+#include "Shader.h"
+#include "ComputeShader.h"
 
 static int imageWidth = 1600;
 static int imageHeight = 900;
@@ -14,6 +17,10 @@ static int maxDepth = 50;
 static bool useMultithreading = true;
 static bool useGPUTracing = false;
 static bool useBuildUpRender = true;
+
+// timing 
+float deltaTime = 0.0f; // time between current frame and last frame
+float lastFrame = 0.0f; // time of last frame
 
 RaytracingApplication::RaytracingApplication()
 	: running(false), imageTexture(0),
@@ -59,6 +66,7 @@ RaytracingApplication::~RaytracingApplication()
 void RaytracingApplication::Run()
 {
 	Shader displayShader("assets/shaders/maindisplay.vert", "assets/shaders/maindisplay.frag");
+	ComputeShader raytraceShader("assets/shaders/raytracer.comp");
 
 	float fullscreenQuadVerts[] = {
 		-1.0f, -1.0f, 1.0f,
@@ -85,11 +93,19 @@ void RaytracingApplication::Run()
 	glEnableVertexAttribArray(0);
 
 	glGenTextures(1, &imageTexture);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, imageTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	displayShader.use();
+	displayShader.setInt("ImageTexture", 0);
 
+	int sampleCounter = 0;
+	Scene gpuRaytracingScene;
 	while (!glfwWindowShouldClose(window))
 	{
-		displayShader.use();
 		glfwPollEvents();
 
 		if (raytracerThread && !running && raytracerThread->joinable())
@@ -101,9 +117,25 @@ void RaytracingApplication::Run()
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 		ImGui::Begin("Render settings", NULL, windowFlags);
-		ImGui::SetWindowSize({ 400.0f, 195.0f });
+		ImGui::SetWindowSize({ 400.0f, 215.0f });
 		ImGui::SetWindowPos({ 0.0f, 0.0f });
 
+		if (ImGui::Checkbox("Use GPU Raytracer", &useGPUTracing) && useGPUTracing)
+		{
+			sampleCounter = 0;
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, imageTexture);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, imageWidth, imageHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+			glBindImageTexture(0, imageTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+			raytraceShader.use();
+			gpuRaytracingScene = setupWorld();
+		}
+		ImGui::BeginDisabled(useGPUTracing);
 		ImGui::BeginDisabled(running);
 		ImGui::InputInt("Image width", &imageWidthSetting);
 		ImGui::InputInt("Image height", &imageHeightSetting);
@@ -137,19 +169,42 @@ void RaytracingApplication::Run()
 		}
 		ImGui::SameLine();
 		ImGui::Text(renderTimeString.c_str());
+		ImGui::EndDisabled();
 		ImGui::End();
 
+		displayShader.use();
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glBindTexture(GL_TEXTURE_2D, imageTexture);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageTextureData->data());
-		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, imageTexture);
+		if(!useGPUTracing)
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageTextureData->data());
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, imageTexture);
-		displayShader.setInt("ImageTexture", 0);
+
+		if (useGPUTracing)
+		{
+			float startTime = glfwGetTime();
+			raytraceShader.use();
+			raytraceShader.setInt("sampleCount", sampleCounter);
+			raytraceShader.setVec3("camera.origin", gpuRaytracingScene.camera.origin);
+			raytraceShader.setVec3("camera.lowerLeftCorner", gpuRaytracingScene.camera.lowerLeftCorner);
+			raytraceShader.setVec3("camera.horizontal", gpuRaytracingScene.camera.horizontal);
+			raytraceShader.setVec3("camera.vertical", gpuRaytracingScene.camera.vertical);
+			raytraceShader.setVec3("camera.u", gpuRaytracingScene.camera.u);
+			raytraceShader.setVec3("camera.v", gpuRaytracingScene.camera.v);
+			raytraceShader.setVec3("camera.w", gpuRaytracingScene.camera.w);
+			raytraceShader.setFloat("camera.lensRadius", gpuRaytracingScene.camera.lensRadius);
+			glDispatchCompute((unsigned int)imageWidth / 10, (unsigned int)imageHeight / 10, 1);
+
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+			renderTimeString = std::string("Frametime: " + std::to_string(glfwGetTime() - startTime) + "s");
+		}
+
+		displayShader.use();
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -157,6 +212,9 @@ void RaytracingApplication::Run()
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glfwSwapBuffers(window);
+
+		if(useGPUTracing)
+			sampleCounter++;
 	}
 }
 
@@ -182,83 +240,104 @@ void RaytracingApplication::keyCallback(GLFWwindow* window, int key, int scancod
 
 void RaytracingApplication::runRaytracer()
 {
-	//Image
-	const float aspectRatio = imageWidth / imageHeight;
-
-	//World
-	HittableList world = randomScene();
-	glm::vec3 background(1.0f, 1.0f, 1.0f);
-
-	//Camera
-	glm::vec3 lookfrom = { 13.0f, 2.0f, 3.0f };
-	glm::vec3 lookat = { 0.0f, 0.0f, 0.0f };
-	glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
-	float distToFocus = 10.0f;
-	float aperture = 0.1f;
-	Camera cam(lookfrom, lookat, vup, 20.0f, aspectRatio, aperture, distToFocus);
-
 	imageTextureData = std::make_shared<std::vector<GLubyte>>();
 	imageTextureData->resize(imageWidth * imageHeight * 4);
+	raytracerThread = std::make_unique<std::thread>([this]
+		{
+			//Image
+			const float aspectRatio = imageWidth / imageHeight;
+
+			//World
+			Scene renderScene = setupWorld();
+			
+
+			float startTime = glfwGetTime();
+
+			//Render
+			if (useMultithreading)
+			{
+				raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, renderScene, imageHeight, imageWidth, samplesPerPixel, maxDepth, useBuildUpRender);
+			}
+			else
+			{
+				raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, renderScene, imageHeight, imageWidth, samplesPerPixel, maxDepth, useBuildUpRender);
+			}
+
+			raytracerPtr->Run();
+
+			float endTime = glfwGetTime();
+
+			renderTimeString = std::string("Time to render: " + std::to_string(endTime - startTime) + "s");
+			running = false;
+		});
+}
+
+Scene RaytracingApplication::setupWorld()
+{
 	if (useGPUTracing)
 	{
-		raytracerPtr = std::make_unique<GPURaytracer>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth, screenWidth, screenHeight);
-		raytracerPtr->Run();
-		running = false;
+		HittableList world;
+		glm::vec3 background = glm::vec3(0.0f, 0.0f, 0.0f);
+		const float aspectRatio = imageWidth / imageHeight;
+		glm::vec3 lookfrom = { 0.0f, 0.0f, 1.0f };
+		glm::vec3 lookat = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
+		float distToFocus = 10.0f;
+		float aperture = 0.0f;
+		Camera cam(lookfrom, lookat, vup, 40.0f, aspectRatio, aperture, distToFocus);
+
+		return { world, cam, background };
 	}
 	else
 	{
-		raytracerThread = std::make_unique<std::thread>([this]
-			{
-				//Image
-				const float aspectRatio = imageWidth / imageHeight;
+		HittableList world = cornellBox();// = randomScene();
+		glm::vec3 background = glm::vec3(0.0f, 0.0f, 0.0f);
 
-				//World
-				HittableList world;// = cornellBox();// = randomScene();
-				glm::vec3 background = glm::vec3(1.0f, 1.0f, 1.0f);
+		glm::mat4 vaseModelMatrix(1.0f);
+		vaseModelMatrix = glm::translate(vaseModelMatrix, { 277.5f, 100.00f, 277.5f });
+		vaseModelMatrix = glm::scale(vaseModelMatrix, { 2000.0f, 2000.0f, 2000.0f });
+		/* For Make-shift cornell box
+		vaseModelMatrix = glm::translate(vaseModelMatrix, { 0.0f, 0.02f, 0.0f });
+		vaseModelMatrix = glm::scale(vaseModelMatrix, {0.5f, 0.5f, 0.5f});
+		*/
+		//world.add(std::make_shared<Mesh>(vaseModelMatrix, "assets/models/brass_vase/brass_vase_04_4k.gltf"));
+		auto white = std::make_shared<Lambertian>(glm::vec3(0.73f, 0.73f, 0.73f));
 
-				glm::mat4 vaseModelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-				auto vase = std::make_shared<Mesh>(vaseModelMatrix, "assets/models/brass_vase/brass_vase_04_4k.gltf");
-				world.add(vase);
+		glm::mat4 box1Model(1.0f);
+		box1Model = glm::translate(box1Model, glm::vec3(265.0f, 0.0f, 295.0f));
+		box1Model = glm::rotate(box1Model, glm::radians(15.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		world.add(std::make_shared<Box>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(165.0f, 330.0f, 165.0f), white, box1Model));
 
-				auto greenMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 1.0f, 0.0f));
-				auto redMat = std::make_shared<Lambertian>(glm::vec3(1.0f, 0.0f, 0.0f));
-				auto blueMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 0.0f, 1.0f));
-				auto groundMaterial = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
-				auto lightMat = std::make_shared<DiffuseLight>(glm::vec3(1.0f, 1.0f, 1.0f));
-				world.add(std::make_shared<Sphere>(glm::vec3(1.1f, 0.0f, 0.0f), 1.0f, greenMat));
-				world.add(std::make_shared<Sphere>(glm::vec3(-1.1f, 0.0f, 0.0f), 1.0f, redMat));
-				world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, 1.1f), 1.0f, blueMat));
-				world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 1.3f, 0.0f), 1.0f, lightMat));
-				world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMaterial));
+		glm::mat4 box2Model(1.0f);
+		box2Model = glm::translate(box2Model, glm::vec3(130.0f, 0.0f, 65.0f));
+		box2Model = glm::rotate(box2Model, glm::radians(-18.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		world.add(std::make_shared<Box>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(165.0f, 165.0f, 165.0f), white, box2Model));
 
-				//Camera
-				//glm::vec3 lookfrom = { 278f.0, 278f.0, -800f.0 };
-				glm::vec3 lookfrom = { 0.0f, 0.1f, -0.5f };
-				glm::vec3 lookat = { 0.0f, 0.1f, 0.0f };
-				glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
-				float distToFocus = 10.0f;
-				float aperture = 0.0f;
-				Camera cam(lookfrom, lookat, vup, 40.0f, aspectRatio, aperture, distToFocus);
+		/* Make-shift cornell box
+		auto greenMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 1.0f, 0.0f));
+		auto redMat = std::make_shared<Lambertian>(glm::vec3(1.0f, 0.0f, 0.0f));
+		auto blueMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 0.0f, 1.0f));
+		auto groundMaterial = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
+		auto lightMat = std::make_shared<DiffuseLight>(glm::vec3(1.0f, 1.0f, 1.0f));
+		world.add(std::make_shared<Sphere>(glm::vec3(1.1f, 0.0f, 0.0f), 1.0f, greenMat));
+		world.add(std::make_shared<Sphere>(glm::vec3(-1.1f, 0.0f, 0.0f), 1.0f, redMat));
+		world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, 1.1f), 1.0f, blueMat));
+		world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 1.3f, 0.0f), 1.1f, lightMat));
+		world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, groundMaterial));
+		*/
 
-				float startTime = glfwGetTime();
+		//Camera
+		const float aspectRatio = imageWidth / imageHeight;
+		glm::vec3 lookfrom = { 278.0f, 278.0f, -800.0f };
+		//glm::vec3 lookfrom = { 0.0f, 0.1f, -0.5f };
+		//glm::vec3 lookat = { 0.0f, 0.1f, 0.0f };
+		glm::vec3 lookat = { 278.0f, 278.0f, 0.0f };
+		glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
+		float distToFocus = 10.0f;
+		float aperture = 0.0f;
+		Camera cam(lookfrom, lookat, vup, 40.0f, aspectRatio, aperture, distToFocus);
 
-				//Render
-				if (useMultithreading)
-				{
-					raytracerPtr = std::make_unique<RaytracerMT>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth, useBuildUpRender);
-				}
-				else
-				{
-					raytracerPtr = std::make_unique<RaytracerNormal>(imageTextureData, cam, world, background, imageHeight, imageWidth, samplesPerPixel, maxDepth, useBuildUpRender);
-				}
-
-				raytracerPtr->Run();
-
-				float endTime = glfwGetTime();
-
-				renderTimeString = std::string("Time to render: " + std::to_string(endTime - startTime) + "s");
-				running = false;
-			});
+		return { world, cam, background };
 	}
 }
 
@@ -279,8 +358,8 @@ HittableList randomScene() {
 
 	for (int a = -11; a < 11; a++) {
 		for (int b = -11; b < 11; b++) {
-			auto chooseMat = randomfloat();
-			glm::vec3 center(a + 0.9f * randomfloat(), 0.2f, b + 0.9f * randomfloat());
+			auto chooseMat = randomFloat();
+			glm::vec3 center(a + 0.9f * randomFloat(), 0.2f, b + 0.9f * randomFloat());
 
 			if ((center - glm::vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f) {
 				std::shared_ptr<Material> sphereMaterial;
@@ -294,7 +373,7 @@ HittableList randomScene() {
 				else if (chooseMat < 0.95f) {
 					// metal
 					auto albedo = randomVec(0.5f, 1.0f);
-					auto fuzz = randomfloat(0.0f, 0.5f);
+					auto fuzz = randomFloat(0.0f, 0.5f);
 					sphereMaterial = std::make_shared<Metal>(albedo, fuzz);
 					world.add(std::make_shared<Sphere>(center, 0.2f, sphereMaterial));
 				}
@@ -328,25 +407,66 @@ HittableList cornellBox()
 	auto green = std::make_shared<Lambertian>(glm::vec3(0.12f, 0.45f, 0.15f));
 	auto light = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
 
-	/*
-	objects.add(make_shared<Triangle>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), green, ""));
-	objects.add(make_shared<Triangle>(glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(555.0f, 0.0f, 555.0f), green, "")); //Left
+	Vertex vert0;
+	Vertex vert1;
+	Vertex vert2;
+	vert0.normal = { 0.0f, 0.0f, 0.0f };
+	vert1.normal = { 0.0f, 0.0f, 0.0f };
+	vert2.normal = { 0.0f, 0.0f, 0.0f };
 
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(0.0f, 555.0f, 555.0f), red, ""));
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 555.0f, 555.0f), glm::vec3(0.0f, 0.0f, 555.0f), red, "")); //Right
+	vert0.position = glm::vec3(555.0f, 0.0f, 0.0f);
+	vert1.position = glm::vec3(555.0f, 555.0f, 0.0f);
+	vert2.position = glm::vec3(555.0f, 555.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), green, ""));
+	vert0.position = glm::vec3(555.0f, 0.0f, 0.0f);
+	vert1.position = glm::vec3(555.0f, 555.0f, 555.0f);
+	vert2.position = glm::vec3(555.0f, 0.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), green, "")); //Left
 
-	objects.add(make_shared<Triangle>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 332.0f), light, ""));
-	objects.add(make_shared<Triangle>(glm::vec3(213.0f, 554.0f, 227.0f), glm::vec3(343.0f, 554.0f, 332.0f), glm::vec3(213.0f, 554.0f, 332.0f), light, "")); //Light
+	vert0.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	vert1.position = glm::vec3(0.0f, 555.0f, 0.0f);
+	vert2.position = glm::vec3(0.0f, 555.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), red, ""));
+	vert0.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	vert1.position = glm::vec3(0.0f, 555.0f, 555.0f);
+	vert2.position = glm::vec3(0.0f, 0.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), red, "")); //Right
 
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 555.0f), white, ""));
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(0.0f, 0.0f, 555.0f), white, "")); //Floor
+	vert0.position = glm::vec3(213.0f, 554.0f, 227.0f);
+	vert1.position = glm::vec3(343.0f, 554.0f, 227.0f);
+	vert2.position = glm::vec3(343.0f, 554.0f, 332.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), light, ""));
+	vert0.position = glm::vec3(213.0f, 554.0f, 227.0f);
+	vert1.position = glm::vec3(343.0f, 554.0f, 332.0f);
+	vert2.position = glm::vec3(213.0f, 554.0f, 332.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), light, "")); //Light
 
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), white, ""));
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 555.0f, 0.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(0.0f, 555.0f, 555.0f), white, "")); //Top
+	vert0.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	vert1.position = glm::vec3(555.0f, 0.0f, 0.0f);
+	vert2.position = glm::vec3(555.0f, 0.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), white, ""));
+	vert0.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	vert1.position = glm::vec3(555.0f, 0.0f, 555.0f);
+	vert2.position = glm::vec3(0.0f, 0.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), white, "")); //Floor
 
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 0.0f, 555.0f), glm::vec3(555.0f, 555.0f, 555.0f), white, "back"));
-	objects.add(make_shared<Triangle>(glm::vec3(0.0f, 0.0f, 555.0f), glm::vec3(555.0f, 555.0f, 555.0f), glm::vec3(0.0f, 555.0f, 555.0f), white, "back")); //Back
-	*/
+	vert0.position = glm::vec3(0.0f, 555.0f, 0.0f);
+	vert1.position = glm::vec3(555.0f, 555.0f, 0.0f);
+	vert2.position = glm::vec3(555.0f, 555.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), white, ""));
+	vert0.position = glm::vec3(0.0f, 555.0f, 0.0f);
+	vert1.position = glm::vec3(555.0f, 555.0f, 555.0f);
+	vert2.position = glm::vec3(0.0f, 555.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), white, "")); //Top
+
+	vert0.position = glm::vec3(0.0f, 0.0f, 555.0f);
+	vert1.position = glm::vec3(555.0f, 0.0f, 555.0f);
+	vert2.position = glm::vec3(555.0f, 555.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), white, "back"));
+	vert0.position = glm::vec3(0.0f, 0.0f, 555.0f);
+	vert1.position = glm::vec3(555.0f, 555.0f, 555.0f);
+	vert2.position = glm::vec3(0.0f, 555.0f, 555.0f);
+	objects.add(make_shared<Triangle>(vert0, vert1, vert2, glm::mat4(1.0f), white, "back")); //Back
 
 	return objects;
 }

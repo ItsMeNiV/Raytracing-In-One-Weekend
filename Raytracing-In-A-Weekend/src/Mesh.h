@@ -30,6 +30,12 @@ public:
         return hitAnything;
     }
 
+    virtual bool BoundingBox(AABB& outputBox) const
+    {
+        outputBox = *boundingBox;
+        return true;
+    }
+
 private:
     std::shared_ptr<AABB> boundingBox;
     glm::mat4 modelMatrix;

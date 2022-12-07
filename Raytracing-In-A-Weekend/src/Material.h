@@ -74,7 +74,7 @@ public:
         bool cannotRefract = refractionRatio * sinTheta > 1.0f;
         glm::vec3 direction;
 
-        if (cannotRefract || reflectance(cosTheta, refractionRatio) > randomfloat())
+        if (cannotRefract || reflectance(cosTheta, refractionRatio) > randomFloat())
             direction = reflect(unitDirection, rec.normal);
         else
             direction = refract(unitDirection, rec.normal, refractionRatio);

@@ -138,18 +138,18 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
         }
 
         glm::mat3 normalMatrix(glm::transpose(glm::inverse(modelMatrix)));
-        pos0 = glm::vec3(modelMatrix * glm::vec4(pos0, 0.0f));
-        pos1 = glm::vec3(modelMatrix * glm::vec4(pos1, 0.0f));
-        pos2 = glm::vec3(modelMatrix * glm::vec4(pos2, 0.0f));
-        norm0 = glm::vec3(normalMatrix * glm::vec4(norm0, 0.0f));
-        norm1 = glm::vec3(normalMatrix * glm::vec4(norm1, 0.0f));
-        norm2 = glm::vec3(normalMatrix * glm::vec4(norm2, 0.0f));
-        tangent0 = glm::vec3(modelMatrix * glm::vec4(tangent0, 0.0f));
-        tangent1 = glm::vec3(modelMatrix * glm::vec4(tangent1, 0.0f));
-        tangent2 = glm::vec3(modelMatrix * glm::vec4(tangent2, 0.0f));
-        bitangent0 = glm::vec3(modelMatrix * glm::vec4(bitangent0, 0.0f));
-        bitangent1 = glm::vec3(modelMatrix * glm::vec4(bitangent1, 0.0f));
-        bitangent2 = glm::vec3(modelMatrix * glm::vec4(bitangent2, 0.0f));
+        pos0 = glm::vec3(modelMatrix * glm::vec4(pos0, 1.0f));
+        pos1 = glm::vec3(modelMatrix * glm::vec4(pos1, 1.0f));
+        pos2 = glm::vec3(modelMatrix * glm::vec4(pos2, 1.0f));
+        norm0 = glm::vec3(normalMatrix * glm::vec4(norm0, 1.0f));
+        norm1 = glm::vec3(normalMatrix * glm::vec4(norm1, 1.0f));
+        norm2 = glm::vec3(normalMatrix * glm::vec4(norm2, 1.0f));
+        tangent0 = glm::vec3(modelMatrix * glm::vec4(tangent0, 1.0f));
+        tangent1 = glm::vec3(modelMatrix * glm::vec4(tangent1, 1.0f));
+        tangent2 = glm::vec3(modelMatrix * glm::vec4(tangent2, 1.0f));
+        bitangent0 = glm::vec3(modelMatrix * glm::vec4(bitangent0, 1.0f));
+        bitangent1 = glm::vec3(modelMatrix * glm::vec4(bitangent1, 1.0f));
+        bitangent2 = glm::vec3(modelMatrix * glm::vec4(bitangent2, 1.0f));
 
         Vertex vert0(pos0, norm0, tex0, tangent0, bitangent0);
         Vertex vert1(pos1, norm1, tex1, tangent1, bitangent1);

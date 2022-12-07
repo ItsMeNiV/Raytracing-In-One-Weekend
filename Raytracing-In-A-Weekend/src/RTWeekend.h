@@ -23,16 +23,16 @@ inline float degreesToRadians(float degrees) {
 	return degrees * pi / 180.0f;
 }
 
-inline float randomfloat()
+inline float randomFloat()
 {
 	static std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
 	static std::mt19937 generator;
 	return distribution(generator);
 }
 
-inline float randomfloat(float min, float max)
+inline float randomFloat(float min, float max)
 {
-	return min + (max - min) * randomfloat();
+	return min + (max - min) * randomFloat();
 }
 
 inline float clamp(float x, float min, float max)
@@ -44,12 +44,17 @@ inline float clamp(float x, float min, float max)
 
 inline glm::vec3 randomVec()
 {
-	return glm::vec3(randomfloat(), randomfloat(), randomfloat());
+	return glm::vec3(randomFloat(), randomFloat(), randomFloat());
 }
 
 inline glm::vec3 randomVec(float min, float max)
 {
-	return glm::vec3(randomfloat(min, max), randomfloat(min, max), randomfloat(min, max));
+	return glm::vec3(randomFloat(min, max), randomFloat(min, max), randomFloat(min, max));
+}
+
+inline int randomInt(int min, int max)
+{
+	return static_cast<int>(randomFloat(min, max + 1));
 }
 
 glm::vec3 randomVecInUnitSphere();

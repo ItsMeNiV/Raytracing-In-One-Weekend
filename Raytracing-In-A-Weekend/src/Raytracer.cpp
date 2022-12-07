@@ -12,7 +12,7 @@ glm::vec3 Raytracer::rayColor(const Ray& r, int depth)
 
 	Ray scattered;
 	glm::vec3 attenuation;
-	glm::vec3 emitted = rec.matPtr->emitted(0.0f, 0.0f, rec.p);
+	glm::vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.p);
 	if (!rec.matPtr->scatter(r, rec, attenuation, scattered))
 		return emitted;
 
@@ -32,9 +32,9 @@ void Raytracer::writeColor(glm::vec3 pixelColor, int samplesPerPixel, int lineNu
 	g = sqrt(scale * g);
 	b = sqrt(scale * b);
 
-	int rValue = static_cast<int>(255.999f * clamp(r, 0.0f, 0.999f));
-	int gValue = static_cast<int>(255.999f * clamp(g, 0.0f, 0.999f));
-	int bValue = static_cast<int>(255.999f * clamp(b, 0.0f, 0.999f));
+	int rValue = static_cast<int>(256 * clamp(r, 0.0f, 0.999f));
+	int gValue = static_cast<int>(256 * clamp(g, 0.0f, 0.999f));
+	int bValue = static_cast<int>(256 * clamp(b, 0.0f, 0.999f));
 
 	uint32_t index = (lineNumber * mImageWidth + columnNumber) * 4;
 	(*mImageTextureData)[index] = (GLubyte)rValue;
@@ -61,13 +61,14 @@ void RaytracerNormal::Run()
 						pixelColor = glm::vec3(0.0f, 0.0f, 0.0f);
 					else
 						pixelColor = mOrigColorData[j * mImageWidth + i];
-					float u = (i + randomfloat()) / (mImageWidth - 1);
-					float v = (j + randomfloat()) / (mImageHeight - 1);
+					float u = (i + randomFloat()) / (mImageWidth - 1);
+					float v = (j + randomFloat()) / (mImageHeight - 1);
 					Ray r = mCamera.GetRay(u, v);
 					pixelColor += rayColor(r, mMaxDepth);
 					writeColor(pixelColor, s, j, i);
 				}
 			}
+			std::cerr << "Sample " << s << " Done." << std::endl;
 		}
 	}
 	else
@@ -82,8 +83,8 @@ void RaytracerNormal::Run()
 				glm::vec3 pixelColor(0.0f, 0.0f, 0.0f);
 				for (int s = 0; s < mSamplesPerPixel; ++s)
 				{
-					float u = (i + randomfloat()) / (mImageWidth - 1);
-					float v = (j + randomfloat()) / (mImageHeight - 1);
+					float u = (i + randomFloat()) / (mImageWidth - 1);
+					float v = (j + randomFloat()) / (mImageHeight - 1);
 					Ray r = mCamera.GetRay(u, v);
 					pixelColor += rayColor(r, mMaxDepth);
 				}
@@ -104,8 +105,8 @@ void RaytracerMT::writeLine(int lineNumber, int currentSample)
 				pixelColor = glm::vec3(0.0f, 0.0f, 0.0f);
 			else
 				pixelColor = mOrigColorData[lineNumber * mImageWidth + i];
-			float u = (i + randomfloat()) / (mImageWidth - 1);
-			float v = (lineNumber + randomfloat()) / (mImageHeight - 1);
+			float u = (i + randomFloat()) / (mImageWidth - 1);
+			float v = (lineNumber + randomFloat()) / (mImageHeight - 1);
 			Ray r = mCamera.GetRay(u, v);
 			pixelColor += rayColor(r, mMaxDepth);
 			const std::lock_guard<std::mutex> lock(mOutputMutex);
@@ -119,8 +120,8 @@ void RaytracerMT::writeLine(int lineNumber, int currentSample)
 			glm::vec3 pixelColor(0.0f, 0.0f, 0.0f);
 			for (int s = 0; s < mSamplesPerPixel; ++s)
 			{
-				float u = (i + randomfloat()) / (mImageWidth - 1);
-				float v = (lineNumber + randomfloat()) / (mImageHeight - 1);
+				float u = (i + randomFloat()) / (mImageWidth - 1);
+				float v = (lineNumber + randomFloat()) / (mImageHeight - 1);
 				Ray r = mCamera.GetRay(u, v);
 				pixelColor += rayColor(r, mMaxDepth);
 			}
@@ -162,6 +163,7 @@ void RaytracerMT::Run()
 				t.join();
 			}
 			threads.clear();
+			std::cerr << "Sample " << s << " Done." << std::endl;
 		}
 	}
 	else

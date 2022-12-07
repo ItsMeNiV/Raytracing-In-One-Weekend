@@ -30,7 +30,7 @@ glm::vec3 randomInUnitDisk()
 {
 	while (true)
 	{
-		glm::vec3 p = glm::vec3(randomfloat(-1.0f, 1.0f), randomfloat(-1.0f, 1.0f), 0.0f);
+		glm::vec3 p = glm::vec3(randomFloat(-1.0f, 1.0f), randomFloat(-1.0f, 1.0f), 0.0f);
 		if (glm::dot(p, p) >= 1) continue;
 		return p;
 	}
