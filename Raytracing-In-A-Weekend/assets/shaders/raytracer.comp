@@ -1,37 +1,12 @@
 #version 460 core
 
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;
-
-
-float random(vec2 co){
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-vec3 random_in_unit_disk() {
-	while(true) {
-		vec3 p = vec3(random(vec2(-1.0, 1.0)), random(vec2(-1.0, 1.0)), 0.0);
-		if(dot(p, p) >= 1) continue;
-		return p;
-	}
-}
-
-// ----------------------------------------------------------------------------
-//
-// uniforms
-//
-// ----------------------------------------------------------------------------
-
-//Ray
+//Structs
 struct Ray {
 	vec3 orig;
 	vec3 dir;
 };
-vec3 ray_at(Ray r, float t) {
-	return r.orig + t*r.dir;
-}
-//Ray
+vec3 rayAt(Ray r, float t);
 
-//Camera
 struct Camera {
 	vec3 origin;
 	vec3 lowerLeftCorner;
@@ -42,21 +17,69 @@ struct Camera {
 	vec3 w;
 	float lensRadius;
 };
+Ray cameraGetRay(Camera camera, float s, float t);
+//Structs
 
-Ray camera_get_ray(Camera camera, float s, float t) {
-	vec3 rd = camera.lensRadius * random_in_unit_disk();
-	vec3 offset = camera.u * rd.x + camera.v * rd.y;
-
-	return Ray(camera.origin + offset, camera.lowerLeftCorner + s * camera.horizontal * t * camera.vertical - camera.origin - offset);
-}
-//Camera
+//Input layout
+layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
 
 layout (location = 0) uniform int sampleCount;
 layout (location = 1) uniform Camera camera;
+//Input layout
 
-bool hit_sphere(const vec3 center, float radius, const Ray r) {
+//Random
+uint hash(uint x) {
+    x += (x << 10u);
+    x ^= (x >>  6u);
+    x += (x <<  3u);
+    x ^= (x >> 11u);
+    x += (x << 15u);
+    return x;
+}
+
+uint currentRandomOffset = 0;
+
+float random() {
+    currentRandomOffset += 1;
+    const uvec4 v = floatBitsToUint(vec4(gl_GlobalInvocationID.xy, sampleCount, currentRandomOffset));
+
+    uint m = hash(v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w));
+    m &= 0x007FFFFFu;
+    m |= 0x3F800000u;
+    return uintBitsToFloat(m) - 1.0f;
+}
+
+float random(float min, float max) {
+	return min + (max - min) * random();
+}
+
+vec3 randomInUnitDisk() {
+	while(true) {
+		vec3 p = vec3(random(-1.0, 1.0), random(-1.0, 1.0), 0.0);
+		if(dot(p, p) >= 1) continue;
+		return p;
+	}
+}
+//Random
+
+//Ray impl
+vec3 rayAt(Ray r, float t) {
+	return r.orig + t*r.dir;
+}
+//Ray impl
+
+//Camera impl
+Ray cameraGetRay(float s, float t) {
+	vec3 rd = camera.lensRadius * randomInUnitDisk();
+	vec3 offset = camera.u * rd.x + camera.v * rd.y;
+
+	return Ray(camera.origin + offset, camera.lowerLeftCorner + s * camera.horizontal + t * camera.vertical - camera.origin - offset);
+}
+//Camera impl
+
+bool hitSphere(const vec3 center, float radius, const Ray r) {
 	vec3 oc = r.orig - center;
     float a = dot(r.dir, r.dir);
     float b = 2.0 * dot(oc, r.dir);
@@ -65,8 +88,8 @@ bool hit_sphere(const vec3 center, float radius, const Ray r) {
     return (discriminant > 0);
 }
 
-vec3 ray_color(Ray r) {
-	if (hit_sphere(vec3(0.0,0.0,-1.0), 0.5, r))
+vec3 rayColor(Ray r) {
+	if (hitSphere(vec3(0.0,0.0,-1.0), 0.5, r))
         return vec3(1.0, 0.0, 0.0);
 
 	vec3 unit_direction = normalize(r.dir);
@@ -77,8 +100,8 @@ vec3 ray_color(Ray r) {
 void main() {
 	vec3 value = vec3(0.0, 0.0, 0.0);
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	Ray r = camera_get_ray(camera, texelCoord.x, texelCoord.y);
-	value = ray_color(r);
+	Ray r = Ray(camera.origin, camera.lowerLeftCorner + texelCoord.x * camera.horizontal + texelCoord.y * camera.vertical - camera.origin);
+	value = rayColor(r);
 	
 	imageStore(imgOutput, texelCoord, vec4(value, 1.0));
 }

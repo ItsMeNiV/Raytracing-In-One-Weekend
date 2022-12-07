@@ -134,6 +134,15 @@ void RaytracingApplication::Run()
 
 			raytraceShader.use();
 			gpuRaytracingScene = setupWorld();
+
+			raytraceShader.setVec3("camera.origin", gpuRaytracingScene.camera.origin);
+			raytraceShader.setVec3("camera.lowerLeftCorner", gpuRaytracingScene.camera.lowerLeftCorner);
+			raytraceShader.setVec3("camera.horizontal", gpuRaytracingScene.camera.horizontal);
+			raytraceShader.setVec3("camera.vertical", gpuRaytracingScene.camera.vertical);
+			raytraceShader.setVec3("camera.u", gpuRaytracingScene.camera.u);
+			raytraceShader.setVec3("camera.v", gpuRaytracingScene.camera.v);
+			raytraceShader.setVec3("camera.w", gpuRaytracingScene.camera.w);
+			raytraceShader.setFloat("camera.lensRadius", gpuRaytracingScene.camera.lensRadius);
 		}
 		ImGui::BeginDisabled(useGPUTracing);
 		ImGui::BeginDisabled(running);
@@ -189,14 +198,6 @@ void RaytracingApplication::Run()
 			float startTime = glfwGetTime();
 			raytraceShader.use();
 			raytraceShader.setInt("sampleCount", sampleCounter);
-			raytraceShader.setVec3("camera.origin", gpuRaytracingScene.camera.origin);
-			raytraceShader.setVec3("camera.lowerLeftCorner", gpuRaytracingScene.camera.lowerLeftCorner);
-			raytraceShader.setVec3("camera.horizontal", gpuRaytracingScene.camera.horizontal);
-			raytraceShader.setVec3("camera.vertical", gpuRaytracingScene.camera.vertical);
-			raytraceShader.setVec3("camera.u", gpuRaytracingScene.camera.u);
-			raytraceShader.setVec3("camera.v", gpuRaytracingScene.camera.v);
-			raytraceShader.setVec3("camera.w", gpuRaytracingScene.camera.w);
-			raytraceShader.setFloat("camera.lensRadius", gpuRaytracingScene.camera.lensRadius);
 			glDispatchCompute((unsigned int)imageWidth / 10, (unsigned int)imageHeight / 10, 1);
 
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -279,12 +280,18 @@ Scene RaytracingApplication::setupWorld()
 		HittableList world;
 		glm::vec3 background = glm::vec3(0.0f, 0.0f, 0.0f);
 		const float aspectRatio = imageWidth / imageHeight;
-		glm::vec3 lookfrom = { 0.0f, 0.0f, 1.0f };
-		glm::vec3 lookat = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 lookfrom = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 lookat = { 0.0f, 0.0f, -1.0f };
 		glm::vec3 vup = { 0.0f, 1.0f, 0.0f };
 		float distToFocus = 10.0f;
 		float aperture = 0.0f;
 		Camera cam(lookfrom, lookat, vup, 40.0f, aspectRatio, aperture, distToFocus);
+		float viewportHeight = 2.0f;
+		float viewportWidth = aspectRatio * viewportHeight;
+		float focalLength = 1.0f;
+		cam.horizontal = glm::vec3(viewportWidth, 0.0f, 0.0f);
+		cam.vertical = glm::vec3(0.0f, viewportHeight, 0.0f);
+		cam.lowerLeftCorner = lookfrom - cam.horizontal / 2.0f - cam.vertical / 2.0f - glm::vec3(0.0f, 0.0f, focalLength);
 
 		return { world, cam, background };
 	}
