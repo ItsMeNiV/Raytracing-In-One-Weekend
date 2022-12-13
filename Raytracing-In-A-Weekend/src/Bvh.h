@@ -4,27 +4,18 @@
 
 #include "Hittable.h"
 
-inline bool boxCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b, int axis)
-{
-    AABB boxA;
-    AABB boxB;
+inline bool boxCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b, int axis);
 
-    if (!a->BoundingBox(boxA) || !b->BoundingBox(boxB))
-        std::cerr << "No bounding box in BVHNode Constructor." << std::endl;
-
-    return boxA.minimum[axis] < boxB.minimum[axis];
-}
-
-bool boxXCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b) { return boxCompare(a, b, 0); }
-bool boxYCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b) { return boxCompare(a, b, 1); }
-bool boxZCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b) { return boxCompare(a, b, 2); }
+bool boxXCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b);
+bool boxYCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b);
+bool boxZCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b);
 
 class BVHNode : public Hittable
 {
 public:
     BVHNode() = default;
-    BVHNode(const HittableList& list) : BVHNode(list.objects, 0, list.objects.size()) {}
-    BVHNode(const std::vector<std::shared_ptr<Hittable>>& srcObjects, size_t start, size_t end)
+    BVHNode(const HittableList& list) : BVHNode(list.objects, 0, list.objects.size(), -1) {}
+    BVHNode(const std::vector<std::shared_ptr<Hittable>>& srcObjects, size_t start, size_t end, int maxDepth)
     {
         auto objects = srcObjects;
 
@@ -53,10 +44,28 @@ public:
         else
         {
             std::sort(objects.begin() + start, objects.begin() + end, comparator);
-
             auto mid = start + objectSpan / 2;
-            left = std::make_shared<BVHNode>(objects, start, mid);
-            right = std::make_shared<BVHNode>(objects, mid, end);
+
+            if (maxDepth == 0)
+            {
+                std::shared_ptr<HittableList> leftList = std::make_shared<HittableList>();
+                std::shared_ptr<HittableList> rightList = std::make_shared<HittableList>();
+                for (size_t i = start; i < mid; i++)
+                {
+                    leftList->add(objects[i]);
+                }
+                for (size_t i = mid; i < end; i++)
+                {
+                    rightList->add(objects[i]);
+                }
+                left = leftList;
+                right = rightList;
+            }
+            else
+            {
+                left = std::make_shared<BVHNode>(objects, start, mid, maxDepth-1);
+                right = std::make_shared<BVHNode>(objects, mid, end, maxDepth-1);
+            }
         }
 
         AABB boxLeft;

@@ -27,6 +27,8 @@ layout(rgba32f, binding = 0) uniform image2D imgOutput;
 
 layout (location = 0) uniform int sampleCount;
 layout (location = 1) uniform Camera camera;
+layout (location = 9) uniform int imageWidth;
+layout (location = 10) uniform int imageHeight;
 //Input layout
 
 //Random
@@ -100,7 +102,9 @@ vec3 rayColor(Ray r) {
 void main() {
 	vec3 value = vec3(0.0, 0.0, 0.0);
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	Ray r = Ray(camera.origin, camera.lowerLeftCorner + texelCoord.x * camera.horizontal + texelCoord.y * camera.vertical - camera.origin);
+	float u = float(texelCoord.x) / (imageWidth-1);
+	float v = float(texelCoord.y) / (imageHeight-1);
+	Ray r = cameraGetRay(u, v);
 	value = rayColor(r);
 	
 	imageStore(imgOutput, texelCoord, vec4(value, 1.0));

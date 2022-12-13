@@ -28,7 +28,7 @@ set(LIB_FILES
 )
 
 # Fügen Sie der ausführbaren Datei dieses Projekts eine Quelle hinzu.
-add_executable (${CMAKE_PROJECT_NAME} ${IMGUI_FILES} ${LIB_FILES} "src/Raytracer.cpp"   "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/RTWeekend.cpp" "src/Camera.h" "src/Material.h"  "src/Raytracer.h" "src/RaytracingApplication.cpp" "src/Shader.h"  "src/Mesh.h" "src/Mesh.cpp" "src/Texture.h" "src/Bvh.h" "src/AABB.h" "src/AABB.cpp" "src/ComputeShader.h")
+add_executable (${CMAKE_PROJECT_NAME} ${IMGUI_FILES} ${LIB_FILES} "src/Raytracer.cpp"   "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/RTWeekend.cpp" "src/Camera.h" "src/Material.h"  "src/Raytracer.h" "src/RaytracingApplication.cpp" "src/Shader.h"  "src/Mesh.h" "src/Mesh.cpp" "src/Texture.h" "src/Bvh.h" "src/AABB.h" "src/AABB.cpp" "src/ComputeShader.h" "src/Bvh.cpp")
 
 add_subdirectory("vendor/glfw")
 add_subdirectory("vendor/assimp")

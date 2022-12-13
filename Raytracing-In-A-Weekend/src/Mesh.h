@@ -19,8 +19,8 @@ public:
         bool hitAnything = false;
         auto closestSoFar = tMax;
 
-        for (const auto& tri : triangles) {
-            if (tri.Hit(r, tMin, closestSoFar, tempRec)) {
+        for (const auto tri : triangles) {
+            if (tri->Hit(r, tMin, closestSoFar, tempRec)) {
                 hitAnything = true;
                 closestSoFar = tempRec.t;
                 rec = tempRec;
@@ -39,7 +39,7 @@ public:
 private:
     std::shared_ptr<AABB> boundingBox;
     glm::mat4 modelMatrix;
-	std::vector<Triangle> triangles;
+	std::vector<std::shared_ptr<Hittable>> triangles;
     std::shared_ptr<Material> matPtr;
     std::string directory;
     std::vector<std::string> loadedTextures;

@@ -2,7 +2,7 @@
 #include "Mesh.h"
 #include "Texture.h"
 #include "Material.h"
-
+#include "Bvh.h"
 
 Mesh::Mesh(glm::mat4 model, std::string const& location)
     : modelMatrix(model), matPtr(nullptr), directory(location.substr(0, location.find_last_of('/')))
@@ -25,6 +25,10 @@ Mesh::Mesh(glm::mat4 model, std::string const& location)
         glm::vec3 minimum = glm::vec3(xMin, yMin, zMin);
         glm::vec3 maximum = glm::vec3(xMax, yMax, zMax);
         boundingBox = std::make_shared<AABB>(minimum, maximum);
+
+        std::shared_ptr<BVHNode> bvh = std::make_shared<BVHNode>(triangles, 0, triangles.size(), 10);
+        triangles.clear();
+        triangles.push_back(bvh);
     }
     else
     {
@@ -155,7 +159,7 @@ void Mesh::processMesh(aiMesh* mesh, const aiScene* scene, float& xMin, float& y
         Vertex vert1(pos1, norm1, tex1, tangent1, bitangent1);
         Vertex vert2(pos2, norm2, tex2, tangent2, bitangent2);
 
-        Triangle tri(vert0, vert1, vert2, modelMatrix, matPtr, "");
+        auto tri = std::make_shared<Triangle>(vert0, vert1, vert2, modelMatrix, matPtr, "");
         triangles.push_back(tri);
 
         //MIN
