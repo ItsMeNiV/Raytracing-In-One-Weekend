@@ -36,6 +36,18 @@ glm::vec3 randomInUnitDisk()
 	}
 }
 
+glm::vec3 randomCosineDirection() {
+	auto r1 = randomFloat();
+	auto r2 = randomFloat();
+	auto z = sqrt(1 - r2);
+
+	auto phi = 2 * pi * r1;
+	auto x = cos(phi) * sqrt(r2);
+	auto y = sin(phi) * sqrt(r2);
+
+	return glm::vec3(x, y, z);
+}
+
 bool vecNearZero(const glm::vec3& vec)
 {
 	const auto s = 1e-8;

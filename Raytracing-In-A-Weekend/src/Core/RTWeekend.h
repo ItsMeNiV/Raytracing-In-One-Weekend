@@ -65,6 +65,8 @@ glm::vec3 randomInHemisphere(const glm::vec3& normal);
 
 glm::vec3 randomInUnitDisk();
 
+glm::vec3 randomCosineDirection();
+
 bool vecNearZero(const glm::vec3& vec);
 
 glm::vec3 refract(const glm::vec3& uv, const glm::vec3& n, float etaiOverEtat);

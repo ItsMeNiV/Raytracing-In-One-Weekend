@@ -1,15 +1,25 @@
 #pragma once
 #include "Core/RTWeekend.h"
 #include "Material/Texture.h"
+#include "Core/ONB.h"
 
 struct HitRecord;
 
 class Material
 {
 public:
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const = 0;
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered, float& pdf) const
+    {
+        return false;
+    }
 
-    virtual glm::vec3 emitted(float u, float v, const glm::vec3& p) const {
+    virtual float scatteringPdf(const Ray& rIn, const HitRecord& rec, const Ray& scattered) const
+    {
+        return 0;
+    }
+
+    virtual glm::vec3 emitted(float u, float v, const glm::vec3& p) const
+    {
         return glm::vec3(0.0f, 0.0f, 0.0f);
     }
 };
@@ -19,20 +29,22 @@ class Lambertian : public Material
 public:
     Lambertian(const glm::vec3& a) : albedo(a) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered, float& pdf) const override
     {
-        #ifdef HEMISPHERE_DIFFUSE
-        auto scatterDirection = randomInHemisphere(rec.normal);
-        #else
-        auto scatterDirection = rec.normal + randomUnitVector();
-        #endif
+        ONB uvw;
+        uvw.buildFromW(rec.normal);
+        glm::vec3 scatterDirection = uvw.local(randomCosineDirection());
 
-        if (vecNearZero(scatterDirection))
-            scatterDirection = rec.normal;
-
-        scattered = Ray(rec.p, scatterDirection);
+        scattered = Ray(rec.p, glm::normalize(scatterDirection));
         attenuation = albedo;
+        pdf = glm::dot(uvw.w(), scattered.direction) / pi;
         return true;
+    }
+
+    virtual float scatteringPdf(const Ray& rIn, const HitRecord& rec, const Ray& scattered) const
+    {
+        float cosine = glm::dot(rec.normal, glm::normalize(scattered.direction));
+        return cosine < 0 ? 0 : cosine / pi;
     }
 
 private:
@@ -44,7 +56,7 @@ class Metal : public Material
 public:
     Metal(const glm::vec3& a, float f) : albedo(a), fuzz(f < 1 ? f : 1) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered, float& pdf) const override
     {
         glm::vec3 reflected = reflect(glm::normalize(rIn.direction), rec.normal);
         scattered = Ray(rec.p, reflected + fuzz*randomVecInUnitSphere());
@@ -62,7 +74,7 @@ class Dielectric : public Material
 public:
     Dielectric(float indexOfRefraction) : ir(indexOfRefraction) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered, float& pdf) const override
     {
         attenuation = glm::vec3(1.0f, 1.0f, 1.0f);
         float refractionRatio = rec.frontFace ? (1.0f / ir) : ir;
@@ -100,7 +112,7 @@ class DiffuseLight : public Material
 public:
     DiffuseLight(glm::vec3 c) : emit(c) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered, float& pdf) const override
     {
         return false;
     }
@@ -118,7 +130,7 @@ class PBRMaterial : public Material
 public:
     PBRMaterial(std::shared_ptr<Texture> diffuse) : diffuseTexture(diffuse) {}
 
-    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered) const override
+    virtual bool scatter(const Ray& rIn, const HitRecord& rec, glm::vec3& attenuation, Ray& scattered, float& pdf) const override
     {
         //Override normal with normalmap if available
         glm::vec3 normal(0.0f, 0.0f, 0.0f);

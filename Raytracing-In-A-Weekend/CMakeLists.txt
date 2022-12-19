@@ -47,6 +47,8 @@ set(PRJ_SRC_FILES
 	"src/AccelerationStructures/AABB.cpp"
 	"src/Shader/Shader.h"
 	"src/Shader/ComputeShader.h"
+	"src/Core/ONB.h"
+	"src/Core/ONB.cpp"
 )
 
 set(INCLUDE_DIRS

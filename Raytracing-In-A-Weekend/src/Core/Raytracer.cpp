@@ -13,10 +13,11 @@ glm::vec3 Raytracer::rayColor(const Ray& r, int depth)
 	Ray scattered;
 	glm::vec3 attenuation;
 	glm::vec3 emitted = rec.matPtr->emitted(rec.u, rec.v, rec.p);
-	if (!rec.matPtr->scatter(r, rec, attenuation, scattered))
+	float pdf;
+	if (!rec.matPtr->scatter(r, rec, attenuation, scattered, pdf))
 		return emitted;
 
-	return emitted + attenuation * rayColor(scattered, depth - 1);
+	return emitted + attenuation * rec.matPtr->scatteringPdf(r, rec, scattered) * rayColor(scattered, depth - 1) / pdf;
 }
 
 void Raytracer::writeColor(glm::vec3 pixelColor, int samplesPerPixel, int lineNumber, int columnNumber)

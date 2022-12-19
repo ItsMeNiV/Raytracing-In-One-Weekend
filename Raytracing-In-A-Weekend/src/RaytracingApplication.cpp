@@ -303,9 +303,9 @@ Scene RaytracingApplication::setupWorld()
 		vaseModelMatrix = glm::translate(vaseModelMatrix, { 0.0f, 0.02f, 0.0f });
 		vaseModelMatrix = glm::scale(vaseModelMatrix, {0.5f, 0.5f, 0.5f});
 		*/
-		world.add(std::make_shared<Mesh>(vaseModelMatrix, "assets/models/brass_vase/brass_vase_04_4k.gltf"));
+		//world.add(std::make_shared<Mesh>(vaseModelMatrix, "assets/models/brass_vase/brass_vase_04_4k.gltf"));
 
-		/*
+		
 		auto white = std::make_shared<Lambertian>(glm::vec3(0.73f, 0.73f, 0.73f));
 
 		glm::mat4 box1Model(1.0f);
@@ -317,7 +317,6 @@ Scene RaytracingApplication::setupWorld()
 		box2Model = glm::translate(box2Model, glm::vec3(130.0f, 0.0f, 65.0f));
 		box2Model = glm::rotate(box2Model, glm::radians(-18.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		world.add(std::make_shared<Box>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(165.0f, 165.0f, 165.0f), white, box2Model));
-		*/
 
 		/* Make-shift cornell box
 		auto greenMat = std::make_shared<Lambertian>(glm::vec3(0.0f, 1.0f, 0.0f));
