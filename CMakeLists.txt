@@ -3,7 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-project ("Raytracing-In-A-Weekend" LANGUAGES C CXX CUDA)
+project ("Raytracing-In-A-Weekend")
 
 # Schließen Sie Unterprojekte ein.
 add_subdirectory ("Raytracing-In-A-Weekend")
