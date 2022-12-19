@@ -27,13 +27,46 @@ set(LIB_FILES
 	"vendor/stb_image/stb_image.cpp"
 )
 
+set(PRJ_SRC_FILES
+	"src/RaytracingApplication.h"
+	"src/RaytracingApplication.cpp"
+	"src/Core/Raytracer.h"
+	"src/Core/Raytracer.cpp"
+	"src/Core/Ray.h"
+	"src/Core/Hittable.h"
+	"src/Core/RTWeekend.h"
+	"src/Core/RTWeekend.cpp"
+	"src/Core/Camera.h"
+	"src/Core/Mesh.h"
+	"src/Core/Mesh.cpp" 
+	"src/Material/Material.h"
+	"src/Material/Texture.h"
+	"src/AccelerationStructures/Bvh.h"
+	"src/AccelerationStructures/Bvh.cpp"
+	"src/AccelerationStructures/AABB.h"
+	"src/AccelerationStructures/AABB.cpp"
+	"src/Shader/Shader.h"
+	"src/Shader/ComputeShader.h"
+)
+
+set(INCLUDE_DIRS
+	"src"
+	"vendor/glfw/include"
+	"vendor/glad/include"
+	"vendor/glm"
+	"vendor/imgui"
+	"vendor/imgui/backends"
+	"vendor/assimp/include"
+	"vendor/stb_image"
+)
+
 # Fügen Sie der ausführbaren Datei dieses Projekts eine Quelle hinzu.
-add_executable (${CMAKE_PROJECT_NAME} ${IMGUI_FILES} ${LIB_FILES} "src/Raytracer.cpp"   "src/Ray.h" "src/Hittable.h" "src/RTWeekend.h" "src/RTWeekend.cpp" "src/Camera.h" "src/Material.h"  "src/Raytracer.h" "src/RaytracingApplication.cpp" "src/Shader.h"  "src/Mesh.h" "src/Mesh.cpp" "src/Texture.h" "src/Bvh.h" "src/AABB.h" "src/AABB.cpp" "src/ComputeShader.h" "src/Bvh.cpp")
+add_executable (${CMAKE_PROJECT_NAME} ${IMGUI_FILES} ${LIB_FILES} ${PRJ_SRC_FILES})
 
 add_subdirectory("vendor/glfw")
 add_subdirectory("vendor/assimp")
 
-include_directories(${CMAKE_PROJECT_NAME} "vendor/glfw/include" "vendor/glad/include" "vendor/glm" "vendor/imgui" "vendor/imgui/backends" "vendor/assimp/include" "vendor/stb_image")
+include_directories(${CMAKE_PROJECT_NAME} ${INCLUDE_DIRS})
 target_link_libraries(${CMAKE_PROJECT_NAME} glfw assimp)
 
 add_custom_target(copy_assets

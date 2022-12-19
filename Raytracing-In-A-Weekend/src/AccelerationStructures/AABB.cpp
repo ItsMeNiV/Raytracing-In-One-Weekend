@@ -1,4 +1,4 @@
-#include "AABB.h"
+#include "AccelerationStructures/AABB.h"
 
 AABB surroundingBox(AABB box0, AABB box1)
 {

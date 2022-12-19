@@ -1,8 +1,8 @@
 #include <iostream>
-#include "Mesh.h"
-#include "Texture.h"
-#include "Material.h"
-#include "Bvh.h"
+#include "Core/Mesh.h"
+#include "Material/Texture.h"
+#include "Material/Material.h"
+#include "AccelerationStructures/Bvh.h"
 
 Mesh::Mesh(glm::mat4 model, std::string const& location)
     : modelMatrix(model), matPtr(nullptr), directory(location.substr(0, location.find_last_of('/')))

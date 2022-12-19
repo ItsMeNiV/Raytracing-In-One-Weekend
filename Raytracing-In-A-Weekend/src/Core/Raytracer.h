@@ -8,11 +8,11 @@
 #include <chrono>
 #include <vector>
 #include "glad/glad.h"
-#include "Hittable.h"
-#include "Camera.h"
-#include "Material.h"
-#include "RTWeekend.h"
-#include "Shader.h"
+#include "Core/Hittable.h"
+#include "Core/Camera.h"
+#include "Material/Material.h"
+#include "Core/RTWeekend.h"
+#include "Shader/Shader.h"
 
 struct Scene
 {
