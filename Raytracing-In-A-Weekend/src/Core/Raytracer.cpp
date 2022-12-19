@@ -1,4 +1,4 @@
-﻿#include "Raytracer.h"
+﻿#include "Core/Raytracer.h"
 
 glm::vec3 Raytracer::rayColor(const Ray& r, int depth)
 {

@@ -2,8 +2,8 @@
 #include <memory>
 #include <vector>
 
-#include "RTWeekend.h"
-#include "AABB.h"
+#include "Core/RTWeekend.h"
+#include "AccelerationStructures/AABB.h"
 
 class Material;
 

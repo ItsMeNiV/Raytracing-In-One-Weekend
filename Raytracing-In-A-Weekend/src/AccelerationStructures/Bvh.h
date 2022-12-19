@@ -1,8 +1,8 @@
 #pragma once
 #include <iostream>
-#include "RTWeekend.h"
+#include "Core/RTWeekend.h"
 
-#include "Hittable.h"
+#include "Core/Hittable.h"
 
 inline bool boxCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b, int axis);
 

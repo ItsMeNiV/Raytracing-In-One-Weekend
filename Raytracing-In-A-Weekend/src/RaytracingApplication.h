@@ -4,7 +4,7 @@
 #include <vector>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
-#include "Raytracer.h"
+#include "Core/Raytracer.h"
 
 class RaytracingApplication
 {

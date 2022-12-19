@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "Hittable.h"
+#include "Core/Hittable.h"
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"

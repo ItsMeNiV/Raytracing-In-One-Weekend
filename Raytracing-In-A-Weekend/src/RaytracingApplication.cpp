@@ -2,11 +2,11 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "Mesh.h"
-#include "Hittable.h"
-#include "Bvh.h"
-#include "Shader.h"
-#include "ComputeShader.h"
+#include "Core/Mesh.h"
+#include "Core/Hittable.h"
+#include "AccelerationStructures/Bvh.h"
+#include "Shader/Shader.h"
+#include "Shader/ComputeShader.h"
 
 static int imageWidth = 1600;
 static int imageHeight = 900;

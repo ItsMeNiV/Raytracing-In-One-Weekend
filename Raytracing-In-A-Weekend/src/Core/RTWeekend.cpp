@@ -1,4 +1,4 @@
-#include "RTWeekend.h"
+#include "Core/RTWeekend.h"
 
 glm::vec3 randomVecInUnitSphere()
 {

@@ -1,4 +1,4 @@
-#include "Bvh.h"
+#include "AccelerationStructures/Bvh.h"
 
 inline bool boxCompare(const std::shared_ptr<Hittable> a, const std::shared_ptr<Hittable> b, int axis)
 {
